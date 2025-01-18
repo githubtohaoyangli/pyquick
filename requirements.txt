@@ -2,3 +2,5 @@ requests
 wget
 sv_ttk
 nuitka
+beautifulsoup4
+lxml
