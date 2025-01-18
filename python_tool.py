@@ -8,10 +8,11 @@ import sv_ttk
 import time
 import wget
 import logging
+import urllib3
 from bs4 import BeautifulSoup
 
 # 禁用 SSL 警告
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 # 获取当前工作目录
 config_path = os.path.join(os.environ["APPDATA"], f"pyquick")
@@ -38,10 +39,38 @@ def select_destination():
         destination_entry.insert(0, destination_path)
 
 
+# 获取可选安装类型
+def installations_reload():
+    if not version_combobox.get():
+        messagebox.showwarning("Warning", "Please select a verion!")
+        return
+    type_reload_button.configure(state="disable", text="Reloading...")
+    root.update()
+    try:
+        with requests.get(
+            f"https://www.python.org/ftp/python/{version_combobox.get()}/"
+        ) as r:
+            bs = BeautifulSoup(r.content, "lxml")
+            results = []
+            for i in bs.find_all("a"):
+                ok = True
+                if i.text.startswith("Python") or i.text.startswith("python"):
+                    for ii in (".asc", ".crt", ".sig", ".sigstore", ".json"):
+                        if i.text.endswith(ii):
+                            ok = False
+                    if ok:
+                        results.append(i.text)
+            if results:
+                type_combobox.configure(values=results)
+    except Exception as e:
+        logging.error(f"Installation Reload Wrong:{e}")
+    type_reload_button.configure(state="normal", text="Reload")
+    root.update()
+
+
 # 下载选定版本的 Python 安装程序
-def download_file(selected_version, destination_path):
-    file_name = f"python-{selected_version}-amd64.exe"
-    destination = os.path.join(destination_path, file_name)
+def download_file(url, destination_path):
+    destination = os.path.join(destination_path, type_combobox.get())
 
     # 如果文件已存在，则删除它
     if os.path.exists(destination):
@@ -57,10 +86,11 @@ def download_file(selected_version, destination_path):
         root.update_idletasks()
 
     try:
-        url = f"https://www.python.org/ftp/python/{selected_version}/python-{selected_version}-amd64.exe"
         # 使用 wget 下载文件
+        download_button.configure(state='disabled',text='Downloading...')
         wget.download(url, out=destination, bar=progress_bar_hook)
         status_label.config(text="Download Complete!")
+        download_button.configure(state='normal',text='Download Selected Version')
         time.sleep(5)
         clear()
     except Exception as e:
@@ -145,16 +175,16 @@ def check_pip_version():
 def python_version_reload():
     version_reload_button.configure(state="disabled", text="Reloading...")
     root.update()
-    with requests.get("https://www.python.org/ftp/python/", stream=False) as r:
-        try:
-            doc = BeautifulSoup(r.content, "lxml")
-            versions = doc.find_all("a")[1:-19]
+    try:
+        with requests.get("https://www.python.org/ftp/python/", stream=False) as r:
+            bs = BeautifulSoup(r.content, "lxml")
             results = []
-            for i in versions:
+            for i in bs.find_all("a")[1:-19]:
                 results.append(i.text[:-1])
-        except Exception as e:
-            logging.error(f"Reload wrong:{e}")
-        version_combobox.configure(values=results)
+            if results:
+                version_combobox.configure(values=results)
+    except Exception as e:
+        logging.error(f"Python Version Reload Wrong:{e}")
     version_reload_button.configure(state="normal", text="Reload")
     root.update()
 
@@ -162,7 +192,14 @@ def python_version_reload():
 # 下载选定版本的 Python
 def download_selected_version():
     selected_version = version_combobox.get()
+    select_type = type_combobox.get()
     destination_path = destination_entry.get()
+
+    if not selected_version:
+        messagebox.showwarning("Warning", "Please select a verion!")
+        return
+    elif not destination_path:
+        messagebox.showwarning("Warning", "Please enter a path!")
 
     if not os.path.exists(destination_path):
         status_label.config(text="Invalid path!")
@@ -171,7 +208,11 @@ def download_selected_version():
         return
 
     download_thread = threading.Thread(
-        target=download_file, args=(selected_version, destination_path)
+        target=download_file,
+        args=(
+            f"https://www.python.org/ftp/python/{selected_version}/{select_type}",
+            destination_path,
+        ),
     )
     download_thread.start()
 
@@ -390,37 +431,44 @@ note.grid(padx=10, pady=10, row=0, column=0)
 version_label = ttk.Label(frame, text="Select Python Version:")
 version_label.grid(row=0, column=0, pady=10, sticky="e")
 
-selected_version = tk.StringVar()
-version_combobox = ttk.Combobox(
-    frame, textvariable=selected_version, values=[""], state="readonly"
-)
+version_combobox = ttk.Combobox(frame, values=[""], state="readonly")
 version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
 version_combobox.current(0)
 
 version_reload_button = ttk.Button(frame, text="Reload", command=python_version_reload)
-version_reload_button.grid(row=0, column=2)
+version_reload_button.grid(row=0, column=2, sticky="w")
+
+type_label = ttk.Label(frame, text="Select Installation:")
+type_label.grid(row=1, column=0, sticky="w")
+
+select_type = tk.StringVar()
+type_combobox = ttk.Combobox(frame, textvariable=select_type, values=[""])
+type_combobox.grid(row=1, column=1, sticky="w")
+
+type_reload_button = ttk.Button(frame, text="Reload", command=installations_reload)
+type_reload_button.grid(row=1, column=2, sticky="w")
 
 destination_label = ttk.Label(frame, text="Select Destination:")
-destination_label.grid(row=1, column=0, pady=10, sticky="e")
+destination_label.grid(row=2, column=0, pady=10, sticky="e")
 
 destination_entry = ttk.Entry(frame, width=40)
-destination_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
+destination_entry.grid(row=2, column=1, pady=10, padx=10, sticky="w")
 
 select_button = ttk.Button(frame, text="Select Path", command=select_destination)
-select_button.grid(row=1, column=2, pady=10, padx=10, sticky="w")
+select_button.grid(row=2, column=2, pady=10, padx=10, sticky="w")
 
 download_button = ttk.Button(
     frame, text="Download Selected Version", command=download_selected_version
 )
-download_button.grid(row=2, column=0, columnspan=3, pady=10, padx=10)
+download_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
 
 progress_bar = ttk.Progressbar(
     frame, orient="horizontal", length=300, mode="determinate"
 )
-progress_bar.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
+progress_bar.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
 
 status_label = ttk.Label(frame, text="", padding="10")
-status_label.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
+status_label.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
 
 # pip 管理页面
 pip_upgrade_button = ttk.Button(framea, text="Upgrade pip", command=upgrade_pip)
