@@ -805,7 +805,7 @@ if __name__ == "__main__":
                 time.sleep(1)
                 continue
     refresh=tk.BooleanVar()
-    refresh_button=ttk.Checkbutton(frameb_tab,text="refresh-python-versions(BETA)(type int)",variable=refresh,onvalue=True,offvalue=False,command=allow_refresh_base)
+    refresh_button=ttk.Checkbutton(frameb_tab,text="refresh-python-versions(BETA)",variable=refresh,onvalue=True,offvalue=False,command=allow_refresh_base)
     refresh_button.grid(row=6,column=0,padx=10,pady=10,columnspan=3)
     reentry=tk.StringVar()
     refresh_entry=ttk.Entry(frameb_tab,width=10)

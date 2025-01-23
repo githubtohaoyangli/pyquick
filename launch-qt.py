@@ -7,7 +7,7 @@ def main():
     window.setWindowTitle('launch')
     window.setGeometry(100, 100, 400, 150)
     
-    label = BodyLabel('Hello, PyQt5!', window)
+    label = BodyLabel('Hello, This is pyquick ', window)
     label.move(100, 30)
     
     # 添加输入框

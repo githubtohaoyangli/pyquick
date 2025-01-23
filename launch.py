@@ -39,7 +39,7 @@ def start():
     entry.grid_forget()
     button.grid_forget()
     button2.grid_forget()
-    if(("python_tool.app" in u) or ("Pyquick.app" in u) or ("Python_tool.app" in u) or ("Pt.app" in u) or ("Python_Tool.app" in u) or ("python_tool.py" in u)):
+    if(("python_tool.app" in u) or ("Pyquick.app" in u) or ("Python_tool.app" in u) or ("Pt.app" in u) or ("Python_Tool.app" in u) or ("python_tool.py" in u) or ("pyquick.app" in u) or ("Pyquick.py" in u) or ("pyquick.py" in u)):
         if "python_tool.py" in u:
             os.system(f"python3 {u}")
         else:
