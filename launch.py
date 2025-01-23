@@ -4,6 +4,7 @@ import sv_ttk
 import os
 import getpass
 import sys
+
 user_name = getpass.getuser()
 path=f"/Users/{user_name}/pt_saved/launch"
 def refresh_path():
@@ -38,8 +39,11 @@ def start():
     entry.grid_forget()
     button.grid_forget()
     button2.grid_forget()
-    if(("python_tool.app" in u) or ("Pyquick.app" in u) or ("Python_tool.app" in u) or ("Pt.app" in u) or ("Python_Tool.app" in u)):
-        os.system(f"open {u}")
+    if(("python_tool.app" in u) or ("Pyquick.app" in u) or ("Python_tool.app" in u) or ("Pt.app" in u) or ("Python_Tool.app" in u) or ("python_tool.py" in u)):
+        if "python_tool.py" in u:
+            os.system(f"python3 {u}")
+        else:
+            os.system(f"open {u}")
         def en():
 
             sys.exit(1)

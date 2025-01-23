@@ -72,32 +72,39 @@ def check_python_installation(delay=3000):
         root.after(delay, clear_a)
 
 def sav_ver():
-    # 获取用户主目录
-    user_home = os.path.expanduser("~")
-    
-    # 获取用户选择的版本
-    selected_version = version_combobox.get()
-    
-    # 检查选择的版本是否在有效版本列表中
-    if selected_version in VERSIONS:
-        # 构建保存目录路径
-        save_dir = os.path.join(user_home, "pt_saved")
-        
-        try:
-            # 确保保存目录存在
-            os.makedirs(save_dir, exist_ok=True)
-            
-            # 写入版本信息到文件
-            with open(os.path.join(save_dir, "version.txt"), "w") as file:
-                file.write(selected_version)
-        except OSError as e:
-            # 捕获并打印文件操作异常
-            print(f"Error: {e}")
+    """
+    保存用户选择的Python版本信息到文件。
+    """
+    try:
+        # 获取用户主目录
+        user_home = os.path.expanduser("~")
 
-def refresh_versions():
+        # 获取用户选择的版本
+        selected_version = version_combobox.get()
+
+        # 构建保存文件的完整路径
+        save_file_path = os.path.join(user_home, "pt_saved", "version.txt")
+
+        # 确保保存目录存在
+        os.makedirs(os.path.dirname(save_file_path), exist_ok=True)
+
+        # 写入版本信息到文件
+        with open(save_file_path, "w") as file:
+            file.write(selected_version)
+    except OSError as e:
+        # 捕获并打印文件操作异常
+        logging.error(f"文件操作错误: {e}", exc_info=True)
+        messagebox.showerror("错误", f"文件操作错误: {e}")
+    except Exception as e:
+        # 捕获并打印其他异常
+        logging.error(f"未知错误: {e}", exc_info=True)
+        messagebox.showerror("错误", f"未知错误: {e}")
+
+
+def refresh_versions(x):
     while True:
         sav_ver()
-        time.sleep(0.1)
+        time.sleep(x)
 
 # 启动版本刷新线程
 
@@ -669,13 +676,14 @@ if __name__ == "__main__":
     #启动laugh = True
     try:
         user_name = getpass.getuser()
-        path=f"/User/{user_name}/pt_saved/launch/launch.app"
+        path=f"/Users/{user_name}/pt_saved/launch/launch.txt"
         if(os.path.exists(path)):
-            subprocess.run(["open",f"/User/{user_name}/pt_saved/launch/launch.app"])
+            print(path)
         else:
+            print(path)
             raise FileNotFoundError
 
-    except Exception:
+    except FileNotFoundError:
         messagebox.showerror("ERROR","You can not open python_tool:exitcode(0xB)")
         exit(0)
     if(datetime.datetime.now()>=datetime.datetime(2025,3,13)):
@@ -776,10 +784,36 @@ if __name__ == "__main__":
     switch = tk.BooleanVar()  # 创建一个BooleanVar变量，用于检测复选框状态
     themes = ttk.Checkbutton(frameb_tab, text="dark mode", variable=switch, style="Switch.TCheckbutton",command=switch_theme)
     themes.grid(row=5,column=0,padx=10,pady=10,columnspan=3)
-
+    def allow_refresh_base():
+        if (refresh.get() == False):
+            refresh_entry.config(state=tk.DISABLED)
+        if (refresh.get()==True):
+            refresh_entry.config(state="enabled")
+    def allow_refresh():
+        if(refresh.get() and refresh_entry.get().isdigit()):
+            ind = float(refresh_entry.get())
+            if(ind!=None or ind > 0):
+                while True:
+                    threading.Thread(target=refresh_versions,args=(ind,)).start()
+                    time.sleep(ind)
+    def allow_refresh_thread():
+        while True:
+            if(refresh.get() and refresh_entry.get().isdigit()):
+                threading.Thread(target=allow_refresh,daemon=True).start()
+                break
+            else:
+                time.sleep(1)
+                continue
+    refresh=tk.BooleanVar()
+    refresh_button=ttk.Checkbutton(frameb_tab,text="refresh-python-versions(BETA)(type int)",variable=refresh,onvalue=True,offvalue=False,command=allow_refresh_base)
+    refresh_button.grid(row=6,column=0,padx=10,pady=10,columnspan=3)
+    reentry=tk.StringVar()
+    refresh_entry=ttk.Entry(frameb_tab,width=10)
+    refresh_entry.grid(row=6,column=4,pady=10,columnspan=2)
     sav_label = ttk.Label(frameb_tab, text="")
-    sav_label.grid(row=6, column=0,columnspan=3)
+    sav_label.grid(row=7, column=0,columnspan=3)
     #update(not available)
+    threading.Thread(target=allow_refresh_thread,daemon=True).start()
 
     load()
     load_theme()
@@ -787,8 +821,7 @@ if __name__ == "__main__":
     update_pip_button_text()
     check_python_installation()
 
-    refresh_thread = threading.Thread(target=refresh_versions, daemon=True)
-    refresh_thread.start()
+
     root.resizable(False,False)
     root.mainloop()
     #root.after(3000,)
