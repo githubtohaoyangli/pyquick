@@ -1,4 +1,4 @@
-# ~~python tool~~重命名为pyquick
+# pyquick
 ![Image text](https://github.com/githubtohaoyangli/python_tool/blob/main/image/wg.png?raw=true)  
 一个用 python `` tkinter, sv_ttk``的小部件（[sv_ttk地址](https://github.com/rdbende/Sun-Valley-ttk-theme),代码只有400行左右，编译只有40MB左右，可以更好进行python使用  
 # 下载python
