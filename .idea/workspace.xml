@@ -63,19 +63,22 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "Python.launch-qt.executor": "Run",
     "Python.launch.executor": "Run",
-    "Python.python_tool.executor": "Run",
+    "Python.python_tool.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "Shell Script.build.sh.executor": "Debug",
+    "deletionFromPopupRequiresConfirmation": "false",
     "git-widget-placeholder": "dev-mac",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "co.fitten.llmintellij.LlmSettingsConfigurable",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -283,7 +286,23 @@
       <option name="project" value="LOCAL" />
       <updated>1737637928263</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="1921">
+      <option name="closed" value="true" />
+      <created>1737795154268</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1737795154268</updated>
+    </task>
+    <task id="LOCAL-00010" summary="1921">
+      <option name="closed" value="true" />
+      <created>1737795201837</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1737795201837</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
