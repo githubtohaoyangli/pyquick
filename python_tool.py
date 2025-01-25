@@ -666,11 +666,11 @@ def load_theme():
     except Exception:
         sv_ttk.set_theme("light")
 def show_about():
-    time_lim=(datetime.datetime(2025,3,13)-datetime.datetime.now()).days
+    time_lim=(datetime.datetime(2025,3,29)-datetime.datetime.now()).days
     if (datetime.datetime.now()>=datetime.datetime(2025,2,1)):
-        messagebox.showwarning("About", f"Version: dev\nBuild: 1921\n{time_lim} days left.")
+        messagebox.showwarning("About", f"Version: dev\nBuild: 1927\n{time_lim} days left.")
     else:
-        messagebox.showinfo("About", f"Version: dev\nBuild: 1921\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: dev\nBuild: 1927\n{time_lim} days left.")
 #GUI
 if __name__ == "__main__":
     #启动laugh = True
