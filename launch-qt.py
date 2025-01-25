@@ -1,15 +1,23 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QFileDialog, QTabWidget, QCheckBox, QPushButton, QLineEdit, QMessageBox,QCompleter,QHBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal
-from qfluentwidgets import PushButton, LineEdit, CheckBox, StrongBodyLabel, QColor, BodyLabel
+from qfluentwidgets import PushButton, LineEdit, CheckBox, StrongBodyLabel, QColor, BodyLabel,ComboBox 
 import getpass
-import find
 import threading
 import time
-from find import finde
 import os
 
+def finde(path,name) :
+    b=[]
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            a= os.path.join(root, name)
+            b.append(a)
+    return list(b)
 def run_base():
+    """
+    获取所有python_tool和pyquick的安装路径,并保存到文件中"/Users/liexe/pt_saved/launch/stands_base.txt
+    """
 
     # 函数体待补充
     
@@ -18,6 +26,7 @@ def run_base():
     path1="/Users"
     path2="/Users"
     name1="python_tool"
+    
     name2="pyquick"
     path3="/Applications"   
     name3="python_tool"
@@ -74,6 +83,8 @@ def run_base():
     
     return stands_b2
 
+
+
 def run_thread():
     i=1
     while True:
@@ -84,6 +95,9 @@ def run_thread():
         i+=1
         
 def run():
+    """
+    获取所有python_tool和pyquick的安装路径
+    """
     if(os.path.exists(f"/Users/{getpass.getuser()}/pt_saved/launch/stands_base.txt")):
         with open(f"/Users/{getpass.getuser()}/pt_saved/launch/stands_base.txt", "r") as f:
             stands_b2 = f.readlines()
@@ -98,6 +112,14 @@ def run():
             return stands
     else:
         run_base()
+class SelectFile(QWidget): 
+    def __init__(self, parent=None):
+        super(SelectFile, self).__init__(parent)
+        self.setWindowTitle('Pyquick_Launcher_2.0' )
+        self.select
+        items=run()
+        
+
 class MainWindow(QWidget):
 
     def __init__(self,parent=None):
