@@ -675,6 +675,7 @@ def show_about():
 if __name__ == "__main__":
     #启动laugh = True
     try:
+
         user_name = getpass.getuser()
         path=f"/Users/{user_name}/pt_saved/launch/launch.txt"
         if(os.path.exists(path)):
@@ -691,9 +692,7 @@ if __name__ == "__main__":
         exit(1)
     elif(datetime.datetime.now()>=datetime.datetime(2025,2,1)):
         messagebox.showwarning("up","Will cannot open on 2025,3,13")
-    else:
-
-        messagebox.showinfo("Welcome","Welcome to Python Tool!")
+    
     root = tk.Tk()
     root.title("Python Tool")
     menu_bar = tk.Menu(root)
