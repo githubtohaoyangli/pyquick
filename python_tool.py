@@ -22,7 +22,7 @@ MY_PATH = os.getcwd()
 
 # 获取用户配置目录
 config_path = os.path.join(os.environ["APPDATA"], f"pyquick")
-
+print(config_path)
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
     os.makedirs(config_path)
@@ -90,7 +90,19 @@ def sort_results(results: list):
             if v1 < v2:
                 _results[ii], _results[ii + 1] = _results[ii + 1], _results[ii]
     version_combobox.configure(values=_results)
-
+    with open(os.path.join(config_path, "version.txt"), "w") as f:
+        f.write(str(_results))
+def read_python_version():
+    try:
+        with open(os.path.join(config_path, "version.txt"), "r") as f:
+            version1=f.read().strip("[").strip("]").split(",")
+            print(version1)
+            version2=[]
+            for i in version1:
+                version2.append(i.strip("'").strip(" ").strip("'"))
+            version_combobox.configure(values=version2)
+    except FileNotFoundError:
+        pass
 def python_dowload_url_reload(url):
     try:
         r1=r'amd64[a-z]\d+/'
@@ -99,12 +111,15 @@ def python_dowload_url_reload(url):
         r4=r'amd64/'
         r5=r'win32/'
         r6=r'arm64/'
+        r7=r'amd64[a-z][a-z]\d+/'
+        r8=r'win32[a-z][a-z]\d+/'
+        r9=r'arm64[a-z][a-z]\d+/'
         if url!= "https://www.python.org/ftp/python/":
             with requests.get(url) as r:
                 bs = BeautifulSoup(r.content, "lxml")
                 results = []
                 for i in bs.find_all("a"):
-                    if (i.text != "../" ) and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text):
+                    if (i.text != "../" ) and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text) and (re.match(r7,i.text)==None)  and (re.match(r8,i.text)==None) and (re.match(r9,i.text)==None):
                         results.append(i.text)
                 if results:
                     if results:
@@ -660,6 +675,6 @@ if __name__ == "__main__":
     themes.grid(row=1, column=0, pady=10, padx=5, sticky="w")
     load_theme()
     threading.Thread(target=show_name, daemon=True).start()
-
+    read_python_version()
     threading.Thread(target=check_python_installation, daemon=True).start()
     root.mainloop()
