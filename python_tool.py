@@ -19,9 +19,10 @@ urllib3.disable_warnings()
 
 # 获取当前工作目录
 MY_PATH = os.getcwd()
+print(MY_PATH)
 
 # 获取用户配置目录
-config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1924")
+config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1024")
 print(config_path)
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
