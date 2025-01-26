@@ -21,7 +21,7 @@ urllib3.disable_warnings()
 MY_PATH = os.getcwd()
 
 # 获取用户配置目录
-config_path = os.path.join(os.environ["APPDATA"], f"pyquick")
+config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1924")
 print(config_path)
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
@@ -96,7 +96,7 @@ def read_python_version():
     try:
         with open(os.path.join(config_path, "version.txt"), "r") as f:
             version1=f.read().strip("[").strip("]").split(",")
-            print(version1)
+            #print(version1)
             version2=[]
             for i in version1:
                 version2.append(i.strip("'").strip(" ").strip("'"))
