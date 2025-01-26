@@ -26,13 +26,19 @@ def run_base():
     path1="/Users"
     path2="/Users"
     name1="python_tool"
-    
     name2="pyquick"
     path3="/Applications"   
     name3="python_tool"
     path4="/Applications"
     name4="pyquick"
-    
+    path5="/"
+    def s5():
+        stands_base5 = finde(path5,name1)
+        return stands_base5
+    def s6():
+        stands_base6 = finde(path5,name2)
+        return stands_base6
+
     def s1():
         stands_base1 = finde(path1,name1)
         return stands_base1
@@ -49,6 +55,9 @@ def run_base():
     stands_base2 = s2()
     stands_base3 = s3()
     stands_base4 = s4()
+    stands_base5 = s5()
+    stands_base6 = s6()
+    
     #stands_base2 = finde(path2,name2)
     stands_b2 = []
     def run_base1(i):
@@ -75,6 +84,10 @@ def run_base():
     for i in stands_base3:
         run_base1(i)
     for i in stands_base4:
+        run_base2(i)
+    for i in stands_base5:
+        run_base1(i)
+    for i in stands_base6:
         run_base2(i)
     with open(f"/Users/{getpass.getuser()}/pt_saved/launch/stands_base.txt", "w") as f:
         for i in stands_b2:  
@@ -112,12 +125,68 @@ def run():
             return stands
     else:
         run_base()
-class SelectFile(QWidget): 
-    def __init__(self, parent=None):
-        super(SelectFile, self).__init__(parent)
-        self.setWindowTitle('Pyquick_Launcher_2.0' )
-        self.select
+class Selectpyquick(QWidget): 
+    def scan_pyquick_ver(self):
         items=run()
+        version_list=[]
+        both=[]
+        for i in items:
+            try:
+                path=i+"/Contents/Resources/versions.txt"  
+                with open(path, "r") as f:
+                    version_list.append(f.read())
+            except FileNotFoundError:
+                version_list.append("unknown")
+        for i in len(items):
+            a=str(items[i])
+            b=str(version_list[i])      
+            both[i]=f"{b}:{a}"
+        return list(both)
+    def start_file(self):
+        u=run()
+        if (("python_tool.app" in u) or ("Pyquick.app" in u) or ("Python_tool.app" in u) or ("Pt.app" in u) or (
+                "Python_Tool.app" in u) or ("python_tool.py" in u) or ("pyquick.app" in u) or (
+                "Pyquick.py" in u) or ("pyquick.py" in u)):
+            if "python_tool.py" in u:
+                os.system(f"python3 {u}")
+            else:
+                os.system(f"open {u}")
+
+            def en():
+                os.system("killall Pyquick_Launcher_2.0" )
+                os.system("killall Python" )
+                os.system("killall Pthon3" )
+                for i in range(14):
+                    os.system(f"killall Python3.{i}")
+                sys.exit(0)
+            en()
+        else:
+            path=f"/Users/{getpass.getuser()}/pt_saved/launch"
+            with open(f"{path}/launch.txt", "w") as f:
+                f.write("")
+
+    def __init__(self, parent=None):
+        super(Selectpyquick, self).__init__(parent)    
+        self.setWindowTitle('Pyquick_Launcher_2.0' )
+        layout=QVBoxLayout()
+        loyout=QHBoxLayout()
+        self.items=self.scan_pyquick_ver(self)
+        self.path=run()
+        self.not_found_label=BodyLabel("Please select Pyquick.")
+        self.not_found_label.setTextColor(QColor(255, 0, 0))
+
+        self.selectbox=ComboBox(self)
+        self.selectbox.addItems(self.items)
+
+        self.Pushbotton=PushButton("start", self)
+        self.Pushbotton.clicked.connect(self.start_file)
+
+
+
+
+
+        
+        
         
 
 class MainWindow(QWidget):
@@ -130,7 +199,7 @@ class MainWindow(QWidget):
         
         # 写一个选择文件函数，仅允许打开app文件
         def select_file(self):
-            file_path, _ = QFileDialog.getOpenFileName(None, "选择文件", "", "App Files (*.app)")
+            file_path, _ = QFileDialog.getOpenFileName(None, "Select App File", "", "App Files (*.app)")
             if file_path:
                 # 设置lineedit的文本
                 self.lineedit.setText(file_path)

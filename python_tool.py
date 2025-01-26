@@ -93,12 +93,12 @@ def sav_ver():
             file.write(selected_version)
     except OSError as e:
         # 捕获并打印文件操作异常
-        logging.error(f"文件操作错误: {e}", exc_info=True)
-        messagebox.showerror("错误", f"文件操作错误: {e}")
+        logging.error(f"File operation error: {e}", exc_info=True)
+        messagebox.showerror("Error", f"File operation error: {e}")
     except Exception as e:
         # 捕获并打印其他异常
-        logging.error(f"未知错误: {e}", exc_info=True)
-        messagebox.showerror("错误", f"未知错误: {e}")
+        logging.error(f"Unknown error   : {e}", exc_info=True)
+        messagebox.showerror("Error"    , f"Unknown error: {e}")
 
 
 def refresh_versions(x):
