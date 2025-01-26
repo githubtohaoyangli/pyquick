@@ -33,10 +33,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 1):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: 2.0 dev\nBuild: 1911\nExpiration time:2025/3/13\n only {time_lim} days left.")
+                               f"Version: 2.0 dev\nBuild: 1924\nExpiration time:2025/3/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: 2.0 dev\nBuild: 1911\nExpiration time:2025/3/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: 2.0 dev\nBuild: 1924\nExpiration time:2025/3/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -90,13 +90,34 @@ def sort_results(results: list):
                 _results[ii], _results[ii + 1] = _results[ii + 1], _results[ii]
     version_combobox.configure(values=_results)
 
+def python_dowload_url_reload(url):
+    try:
+        r1=r'amd64[a-z]\d+/'
+        r3=r'win32[a-z]\d+/'
+        r2=r'arm64[a-z]\d+/'
+        r4=r'amd64/'
+        r5=r'win32/'
+        r6=r'arm64/'
+        if url!= "https://www.python.org/ftp/python/":
+            with requests.get(url) as r:
+                bs = BeautifulSoup(r.content, "lxml")
+                results = []
+                for i in bs.find_all("a"):
+                    if (i.text != "../" ) and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text):
+                        results.append(i.text)
+                if results:
+                    if results:
+                        return results
+    except Exception as e:
+        logging.error(f"Python filename Reload Wrong:{e}")
 
 # 获取可下载版本列表
 def python_version_reload():
     version_reload_button.configure(state="disabled", text="Reloading...")
     root.update()
+    url="https://www.python.org/ftp/python/"
     try:
-        with requests.get("https://www.python.org/ftp/python/") as r:
+        with requests.get(url) as r:
             bs = BeautifulSoup(r.content, "lxml")
             results = []
             for i in bs.find_all("a"):
@@ -186,8 +207,16 @@ def download_chunk(url, start_byte, end_byte, destination, retries=3):
         status_label.config(text=f"Download Failed! Error: {e}")
         is_downloading = False
     return False
-
-
+def show_name():
+    def show_name_thread():
+        select_version=version_combobox.get()
+        url=f"https://www.python.org/ftp/python/{select_version}"
+        __result=python_dowload_url_reload(url)
+        download_file_combobox.configure(values=__result)
+    while True:
+        a=threading.Thread(target=show_name_thread, daemon=True)
+        a.start()
+        time.sleep(0.6)
 # 定义下载指定版本Python安装程序的函数
 def download_file(selected_version, destination_path, num_threads):
     """下载指定版本的Python安装程序"""
@@ -205,7 +234,7 @@ def download_file(selected_version, destination_path, num_threads):
         return
 
     # 构造文件名和目标路径
-    file_name = f"python-{selected_version}-amd64.exe"
+    file_name = download_file_combobox.get()
     destination = os.path.join(destination_path, file_name)
 
     # 如果目标文件已存在，尝试删除它
@@ -218,7 +247,7 @@ def download_file(selected_version, destination_path, num_threads):
             return
 
     # 构造下载URL
-    url = f"https://www.python.org/ftp/python/{selected_version}/python-{selected_version}-amd64.exe"
+    url = f"https://www.python.org/ftp/python/{selected_version}/{file_name}"
 
     # 获取文件大小
     try:
@@ -572,6 +601,10 @@ if __name__ == "__main__":
     version_combobox.grid(row=0, column=1, pady=5, padx=5, sticky="w")
     version_combobox.current(0)
 
+    version_reload_button = ttk.Button(download_frame, text="Reload", command=python_version_reload)
+    version_reload_button.grid(row=0, column=2, sticky="w")
+
+
     destination_label = ttk.Label(download_frame, text="Select Destination:")
     destination_label.grid(row=1, column=0, pady=5, sticky="e")
     destination_entry = ttk.Entry(download_frame, width=40)
@@ -585,19 +618,27 @@ if __name__ == "__main__":
     thread_combobox.grid(row=2, column=1, pady=5, padx=5, sticky="w")
     thread_combobox.current(31)  # Default to 32 threads
 
-    download_button = ttk.Button(download_frame, text="Download Selected Version", command=download_selected_version)
-    download_button.grid(row=3, column=0, columnspan=3, pady=10, padx=5)
+    download_label= ttk.Label(download_frame, text="Choose download file:")
+    download_label.grid(row=3, column=0, pady=5, sticky="e")
+
+    
+    download_file_combobox = ttk.Combobox(download_frame, values=[''], state="readonly")
+    download_file_combobox.grid(row=3, column=1, pady=5, padx=5, sticky="w")
+    
+    download_button = ttk.Button(download_frame, text="Download", command=download_selected_version)
+    download_button.grid(row=4, column=0, columnspan=3, pady=10, padx=5)
+
+    
+
     cancel_button = ttk.Button(download_frame, text="Cancel Download", command=confirm_cancel_download)
-    cancel_button.grid(row=4, column=0, pady=10, padx=5, columnspan=3)
+    cancel_button.grid(row=5, column=0, pady=10, padx=5, columnspan=3)
     cancel_button.config(state="disabled")
 
-    version_reload_button = ttk.Button(download_frame, text="Reload", command=python_version_reload)
-    version_reload_button.grid(row=0, column=2, sticky="w")
-
+    
     progress_bar = ttk.Progressbar(download_frame, orient='horizontal', length=300, mode='determinate')
-    progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
+    progress_bar.grid(row=6, column=0, columnspan=3, pady=10, padx=5)
     status_label = ttk.Label(download_frame, text="", padding="5")
-    status_label.grid(row=6, column=0, columnspan=3, pady=5, padx=5)
+    status_label.grid(row=7, column=0, columnspan=3, pady=5, padx=5)
 
     # pip Management Frame
     pip_upgrade_button = ttk.Button(pip_frame, text="Upgrade pip", command=upgrade_pip)
@@ -616,7 +657,8 @@ if __name__ == "__main__":
     switch = tk.BooleanVar()
     themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
     themes.grid(row=1, column=0, pady=10, padx=5, sticky="w")
-    load_theme()
+    threading.Thread(target=load_theme, daemon=True).start()
+    threading.Thread(target=show_name, daemon=True).start()
 
-    check_python_installation()
+    threading.Thread(target=check_python_installation, daemon=True).start()
     root.mainloop()
