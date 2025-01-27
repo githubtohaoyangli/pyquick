@@ -162,20 +162,24 @@ class Selectpyquick(QWidget):
             return []
         except Exception :
             return []
+    edd=[]
     def save_user_add(self):
         with open(f"/Users/{getpass.getuser()}/pt_saved/launch/stands_base.txt", "r")as f:
             e=f.readlines()
         with open(f"/Users/{getpass.getuser()}/pt_saved/launch/stands_user.txt", "a+") as f:
             ed=f.readlines()
-            edd=[]
+            
             for i in ed:
-                edd.append(i.strip("\n"))
+                self.edd.append(i.strip("\n"))
             for i in e:
-                edd.append(i.strip("\n"))
-            for i in range(len(edd)):
-                if(edd[i]==self.add_pyquick_combobox.text()):
+                self.edd.append(i.strip("\n"))
+            print(self.edd)
+            for i in range(len(self.edd)):
+                if(self.edd[i]==self.add_pyquick_combobox.text()):
+                    print(1)
                     break
-                elif(i==len(edd)-1):
+                elif(i==len(self.edd)-1):
+                    print(2)
                     f.write(self.add_pyquick_combobox.text())
                     f.write("\n")
         self.scan_pyquick_ver()
@@ -198,7 +202,7 @@ class Selectpyquick(QWidget):
                     version_list.append(f.read())
             except FileNotFoundError:
                 version_list.append("unknown")
-        print(version_list)
+        #print(version_list)
         for i in range(len(items)):
             a=str(items[i])
             b=str(version_list[i])      
