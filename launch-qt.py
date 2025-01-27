@@ -9,7 +9,7 @@ import os
 
 def finde(path,name) :
     b=[]
-    for root, dirs, files in os.walk(path):
+    for root,dirs, files in os.walk(path):
         if name in files:
             a= os.path.join(root, name)
             b.append(a)
@@ -138,7 +138,7 @@ def start():
         pass
     else:
         os.mkdir(f"/Users/{getpass.getuser()}/pt_saved/launch")
-        run()
+        #run()
     if os.path.exists(f"/Users/{getpass.getuser()}/pt_saved/launch/launch.txt"):
         pass
     else:   
