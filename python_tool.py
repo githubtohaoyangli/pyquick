@@ -8,7 +8,12 @@ import sv_ttk
 import time
 import wget
 import logging
-
+import platform
+def get_system_build():
+    """获取系统版本"""
+    system_build=int(str(platform.platform().split("-")[2]).split(".")[2])
+    return system_build
+build=get_system_build()
 VERSIONS = [
     "3.13.0","3.13.1",
     "3.12.0","3.12.1","3.12.2","3.12.3","3.12.4","3.12.5","3.12.6","3.12.7","3.12.8",
@@ -25,7 +30,7 @@ VERSIONS = [
 requests.packages.urllib3.disable_warnings()
 
 # 获取当前工作目录
-config_path = os.path.join(os.environ["APPDATA"], f"pyquick")
+config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1101")
 
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
@@ -265,20 +270,22 @@ def install_package():
 
 # 卸载指定的包
 def uninstall_package():
-    try:
-        uninstall_button.config(state="disabled")
-        subprocess.check_output(
-            ["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW
-        )
-        package_name = package_entry.get()
-
+    uninstall_button.config(state="disabled")
+    package_name = package_entry.get()
+    def uninstall_package_thread():
+        
         try:
-            installed_packages = subprocess.check_output(
-                ["python", "-m", "pip", "list", "--format=columns"],
+            installed_packages = subprocess.run(
+                ["python", "-m", "pip", "show",package_name],capture_output=True,
                 text=True,
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
-            if package_name.lower() in installed_packages.lower():
+            if "WARNING: Package(s) not found:" in installed_packages.stderr:
+                package_label.config(text=f"Package '{package_name}' is not installed.")
+                uninstall_button.config(state="normal")
+                root.after(5000, clear)
+            else:
+                
                 result = subprocess.run(
                     ["python", "-m", "pip", "uninstall", "-y", package_name],
                     capture_output=True,
@@ -297,23 +304,14 @@ def uninstall_package():
                     )
                     uninstall_button.config(state="normal")
                     root.after(5000, clear)
-            else:
-                package_label.config(text=f"Package '{package_name}' is not installed.")
-                uninstall_button.config(state="normal")
-                root.after(5000, clear)
         except Exception as e:
             package_label.config(
                 text=f"Error uninstalling package '{package_name}': {str(e)}"
             )
             uninstall_button.config(state="normal")
             root.after(5000, clear)
-    except FileNotFoundError:
-        package_label.config(text="Python is not installed.")
-        root.after(5000, clear)
-    except Exception as e:
-        package_label.config(text=f"Error: {str(e)}")
-        root.after(5000, clear)
-
+    threading.Thread(target=uninstall_package_thread, daemon=True).start()
+    
 
 # 检查 Python 是否已安装
 def check_python_installation():
@@ -332,20 +330,27 @@ def check_python_installation():
 
 # 切换主题
 def switch_theme():
-    if switch.get():
-        sv_ttk.set_theme("dark")
-        with open(f"{config_path}\\theme.txt", "w") as a:
-            a.write("dark")
-    else:
+    if build>22000:
+        if switch.get():
+            sv_ttk.set_theme("dark")
+            with open(f"{config_path}\\theme.txt", "w") as a:
+                a.write("dark")
+        else:
+            sv_ttk.set_theme("light")
+            with open(f"{config_path}\\theme.txt", "w") as a:
+                a.write("light")
+    elif build>19044:
         sv_ttk.set_theme("light")
-        with open(f"{config_path}\\theme.txt", "w") as a:
-            a.write("light")
+        try:
+           os.remove(f"{config_path}\\theme.txt")
+        except:
+            pass
 
 
 # 加载保存的主题设置
 def load_theme():
     try:
-        with open(os.path.join(os.environ["APPDATA"], f"pyquick\\theme.txt"), "r") as r:
+        with open(os.path.join(config_path, f"theme.txt"), "r") as r:
             theme = r.read()
         if theme == "dark":
             switch.set(True)
@@ -454,19 +459,22 @@ package_status_label = ttk.Label(framea, text="", padding="10")
 package_status_label.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
 
 # 主题切换按钮
-switch = tk.BooleanVar()  # 创建一个 BooleanVar 变量，用于检测复选框状态
-themes = ttk.Checkbutton(
-    root,
-    text="Dark Mode",
-    variable=switch,
-    style="Switch.TCheckbutton",
-    command=switch_theme,
-)
-themes.grid(row=1, column=0, pady=10, padx=10, sticky="w")
+if build>22000:
+    switch = tk.BooleanVar()  # 创建一个 BooleanVar 变量，用于检测复选框状态
+    themes = ttk.Checkbutton(
+        root,
+        text="Dark Mode",
+        variable=switch,
+        style="Switch.TCheckbutton",
+        command=switch_theme,
+    )
+    themes.grid(row=1, column=0, pady=10, padx=10, sticky="w")
 
 # 加载保存的主题设置
-load_theme()
-
+if build>22000:
+    load_theme()
+elif build>19044:
+    sv_ttk.set_theme("light")
 # 设置 sv_ttk 主题
 switch_theme()
 
