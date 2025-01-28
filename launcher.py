@@ -1,13 +1,15 @@
 import subprocess
 import sys
-
+import os
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QApplication, QVBoxLayout
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import NavigationItemPosition, FluentWindow, SubtitleLabel, setFont, LineEdit, PushButton
-
-
+config_path=os.path.join(os.environ["APPDATA"], f"pyquick","launcher")
+MY_PATH = os.getcwd()
+if not os.path.exists(config_path):
+    os.makedirs(config_path)
 class Widget(QFrame):
 
     def __init__(self, text: str, parent=None):

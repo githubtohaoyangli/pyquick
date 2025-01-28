@@ -23,14 +23,39 @@ urllib3.disable_warnings()
 
 # 获取当前工作目录
 MY_PATH = os.getcwd()
-print(MY_PATH)
+
 
 # 获取用户配置目录
-config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1931")
-print(config_path)
+config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
+config_path=os.path.join(config_path_base,"1931")
+
+
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
     os.makedirs(config_path)
+if not os.path.exists(os.path.join(config_path_base, "path.txt")):
+    with open(os.path.join(config_path_base, "path.txt"), "a"):
+        pass
+with open(os.path.join(config_path_base, "path.txt"),"r") as f:
+    """
+    pathed:已有的路径
+    """
+    print(os.path.join(config_path_base, "path.txt"))
+    pathed=[]
+    a=f.readlines()
+    for i in a:
+        pathed.append(i.strip("\n"))
+    writable=True
+    
+    for j in pathed:
+        if str(j)==str(os.path.join(MY_PATH,os.path.basename(__file__))):
+            writable=False
+            break
+    if writable:
+        with open(os.path.join(config_path_base, "path.txt"), "a") as f:
+            f.write(os.path.join(MY_PATH,os.path.basename(__file__)))
+            f.write("\n")
+
 
 
 def show_about():
@@ -110,6 +135,9 @@ def read_python_version():
     except FileNotFoundError:
         pass
 def python_dowload_url_reload(url):
+    """
+    懒得改了
+    """
     try:
         r1=r'amd64[a-z]\d+/'
         r3=r'win32[a-z]\d+/'
@@ -120,12 +148,13 @@ def python_dowload_url_reload(url):
         r7=r'amd64[a-z][a-z]\d+/'
         r8=r'win32[a-z][a-z]\d+/'
         r9=r'arm64[a-z][a-z]\d+/'
+        r10=r'[a-z]+/'#最有用
         if url!= "https://www.python.org/ftp/python/":
             with requests.get(url,verify=False) as r:
                 bs = BeautifulSoup(r.content, "lxml")
                 results = []
                 for i in bs.find_all("a"):
-                    if (i.text != "../" ) and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text) and (re.match(r7,i.text)==None)  and (re.match(r8,i.text)==None) and (re.match(r9,i.text)==None):
+                    if (i.text != "../" )and(i.text!="previous/") and(re.match(r10,i.text)==None)and(i.text!="rpms/")and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text) and (re.match(r7,i.text)==None)  and (re.match(r8,i.text)==None) and (re.match(r9,i.text)==None):
                         results.append(i.text)
                 if results:
                     if results:
