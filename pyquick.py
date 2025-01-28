@@ -13,7 +13,7 @@ import requests
 import sv_ttk
 import urllib3
 from bs4 import BeautifulSoup
-# 禁用requests出现的取消ssl验证的警告，直接引用如下
+import urllib3
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -458,32 +458,28 @@ def check_pip_version():
     current_version = get_pip_version()
     if current_version is None:
         package_status_label.config(text="Error: Failed to get current pip version")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
         return
 
     latest_version = get_latest_pip_version()
     if latest_version is None:
         package_status_label.config(text="Error: Failed to get latest pip version")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
         return
 
     if current_version != latest_version:
         message = f"Current pip version: {current_version}\nLatest pip version: {latest_version}\nUpdating pip..."
         package_status_label.config(text=message)
         if update_pip():
+            
             package_status_label.config(text=f"pip has been updated! {latest_version}")
-            time.sleep(5)
-            clear()
+            root.after(5000, clear)
         else:
             package_status_label.config(text="Error: Failed to update pip")
-            time.sleep(5)
-            clear()
+            root.after(5000, clear)
     else:
         package_status_label.config(text=f"pip is up to date: {current_version}")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
 
 
 def upgrade_pip():
@@ -493,90 +489,71 @@ def upgrade_pip():
         threading.Thread(target=check_pip_version, daemon=True).start()
     except FileNotFoundError:
         package_status_label.config(text="Python is not installed.")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
     except Exception as e:
         package_status_label.config(text=f"Error: {str(e)}")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
 
 
 def install_package():
     """安装指定的Python包"""
-    try:
-        subprocess.check_output(["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW)
-        package_name = package_entry.get()
+    
+    package_name = package_entry.get()
 
-        def install_package_thread():
-            try:
-                result = subprocess.run(["python", "-m", "pip", "install", package_name], capture_output=True,
+    def install_package_thread():
+        try:
+            #PyQt5_sip12.16.1(14)
+            
+            result = subprocess.run(["python", "-m", "pip", "install", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-                installed = subprocess.check_output(["python", "-m", "pip", "list", "--format=columns"], text=True,
-                                                    creationflags=subprocess.CREATE_NO_WINDOW)
+            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+                                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            if f"Name: {package_name}" in find_packages.stdout:
+                package_status_label.config(text=f"Package '{package_name}' is already installed.")
+                root.after(5000, clear)
+                return
+            else:
                 if "Successfully installed" in result.stdout:
                     package_status_label.config(text=f"Package '{package_name}' has been installed successfully!")
-                    time.sleep(5)
-                    clear()
-                elif package_name.lower() in installed.lower():
-                    package_status_label.config(text=f"Package {package_name} is already installed.")
-                    time.sleep(5)
-                    clear()
+                    root.after(5000, clear)
                 else:
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
-                    time.sleep(5)
-                    clear()
-            except Exception as e:
-                package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
-                time.sleep(5)
-                clear()
+                    root.after(5000, clear)
+        except Exception as e:
+            package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
+            root.after(5000, clear)
 
-        threading.Thread(target=install_package_thread).start()
-    except FileNotFoundError:
-        package_status_label.config(text="Python is not installed.")
-        time.sleep(5)
-        clear()
-    except Exception as e:
-        package_status_label.config(text=f"Error: {str(e)}")
-        time.sleep(5)
-        clear()
+    threading.Thread(target=install_package_thread,daemon=True).start()
 
 
 def uninstall_package():
     """卸载指定的Python包"""
-    try:
-        subprocess.check_output(["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW)
-        package_name = package_entry.get()
-
+    package_name = package_entry.get()
+    def uninstall_package_thread():
         try:
-            installed_packages = subprocess.check_output(["python", "-m", "pip", "list", "--format=columns"], text=True,
-                                                         creationflags=subprocess.CREATE_NO_WINDOW)
-            if package_name.lower() in installed_packages.lower():
+            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+                                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
+                package_status_label.config(text=f"Package '{package_name}' is not installed.")
+                root.after(5000, clear)
+                return 0
+            else:
                 result = subprocess.run(["python", "-m", "pip", "uninstall", "-y", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                
                 if "Successfully uninstalled" in result.stdout:
                     package_status_label.config(text=f"Package '{package_name}' has been uninstalled successfully!")
-                    time.sleep(5)
-                    clear()
+                    root.after(5000, clear) 
+                
                 else:
                     package_status_label.config(text=f"Error uninstalling package '{package_name}': {result.stderr}")
-                    time.sleep(5)
-                    clear()
-            else:
-                package_status_label.config(text=f"Package '{package_name}' is not installed.")
-                time.sleep(5)
-                clear()
+                    root.after(5000, clear)
+                
         except Exception as e:
             package_status_label.config(text=f"Error uninstalling package '{package_name}': {str(e)}")
-            time.sleep(5)
-            clear()
-    except FileNotFoundError:
-        package_status_label.config(text="Python is not installed.")
-        time.sleep(5)
-        clear()
-    except Exception as e:
-        package_status_label.config(text=f"Error: {str(e)}")
-        time.sleep(5)
-        clear()
+            root.after(5000, clear)
+    threading.Thread(target=uninstall_package_thread,daemon=True).start()
+
 
 
 def check_python_installation():
@@ -660,6 +637,8 @@ if __name__ == "__main__":
     # Python Download Frame
     version_label = ttk.Label(download_frame, text="Select Python Version:")
     version_label.grid(row=0, column=0, pady=5, sticky="e")
+
+
     version_combobox = ttk.Combobox(download_frame, values=[''], state="readonly")
     version_combobox.grid(row=0, column=1, pady=5, padx=5, sticky="w")
     version_combobox.current(0)
@@ -670,13 +649,19 @@ if __name__ == "__main__":
 
     destination_label = ttk.Label(download_frame, text="Select Destination:")
     destination_label.grid(row=1, column=0, pady=5, sticky="e")
+
+
     destination_entry = ttk.Entry(download_frame, width=40)
     destination_entry.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+
+
     select_button = ttk.Button(download_frame, text="Select Path", command=select_destination)
     select_button.grid(row=1, column=2, pady=5, padx=5, sticky="w")
 
     thread_label = ttk.Label(download_frame, text="Select Number of Threads:")
     thread_label.grid(row=2, column=0, pady=5, sticky="e")
+
+
     thread_combobox = ttk.Combobox(download_frame, values=[str(i) for i in range(1, 129)], state="readonly")
     thread_combobox.grid(row=2, column=1, pady=5, padx=5, sticky="w")
     thread_combobox.current(9)  # Default to 32 threads
@@ -688,38 +673,54 @@ if __name__ == "__main__":
     download_file_combobox = ttk.Combobox(download_frame, values=[''], state="readonly")
     download_file_combobox.grid(row=3, column=1, pady=5, padx=5, sticky="w")
     
+
     download_button = ttk.Button(download_frame, text="Download", command=download_selected_version)
     download_button.grid(row=4, column=0, columnspan=3, pady=10, padx=5)
 
     
-
+    # 取消下载按钮
     cancel_button = ttk.Button(download_frame, text="Cancel Download", command=confirm_cancel_download)
     cancel_button.grid(row=5, column=0, pady=10, padx=5, columnspan=3)
     cancel_button.config(state="disabled")
 
-    
+    # 下载进度
     progress_bar = ttk.Progressbar(download_frame, orient='horizontal', length=300, mode='determinate')
     progress_bar.grid(row=6, column=0, columnspan=3, pady=10, padx=5)
+
+
+    # 下载状态
     status_label = ttk.Label(download_frame, text="", padding="5")
     status_label.grid(row=7, column=0, columnspan=3, pady=5, padx=5)
 
     # pip Management Frame
     pip_upgrade_button = ttk.Button(pip_frame, text="Upgrade pip", command=upgrade_pip)
     pip_upgrade_button.grid(row=0, column=0, columnspan=3, pady=10, padx=5)
+
+
     package_label = ttk.Label(pip_frame, text="Enter Package Name:")
     package_label.grid(row=1, column=0, pady=5, padx=5, sticky="e")
+
+
     package_entry = ttk.Entry(pip_frame, width=40)
     package_entry.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+
+
     install_button = ttk.Button(pip_frame, text="Install Package", command=install_package)
     install_button.grid(row=2, column=0, columnspan=3, pady=10, padx=5)
+
+
     uninstall_button = ttk.Button(pip_frame, text="Uninstall Package", command=uninstall_package)
     uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=5)
+
+
     package_status_label = ttk.Label(pip_frame, text="", padding="5")
     package_status_label.grid(row=4, column=0, columnspan=3, pady=5, padx=5)
 
     switch = tk.BooleanVar()
     themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
     themes.grid(row=1, column=0, pady=10, padx=5, sticky="w")
+
+    #启动预加载
     load_theme()
     threading.Thread(target=show_name, daemon=True).start()
     read_python_version()
