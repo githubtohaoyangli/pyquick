@@ -90,16 +90,31 @@ def get_pip_version():
             .decode()
             .strip()
             .split()[1]
-        )
+        ) 
     except subprocess.CalledProcessError as e:
         logging.error(f"Subprocess error: {e}")
         return None
 
+def sort_version(VERSIONS: list):
+    versions=[]
+    for i in VERSIONS:
+        j=i.split('.')
+        versions.append(float(f'{j[1]}.{j[2]}'))
+    #print(versions)
+    for i in range(len(versions)):
+        for ii in range(i+1,len(versions)):
+            if versions[i]<versions[ii]:
+                versions[i],versions[ii]=versions[ii],versions[i]   
+    for i in range(len(versions)):
+        versions[i]="3."+str(versions[i])
+    return versions
 
+
+    
 # 获取最新 pip 版本
 def get_latest_pip_version():
     try:
-        r = requests.get("https://pypi.org/pypi/pip/json", verify=True)  # 启用证书验证
+        r = requests.get("https://pypi.org/pypi/pip/json", verify=False)  # 启用证书验证
         return r.json()["info"]["version"]
     except requests.RequestException as e:
         logging.error(f"Request error: {e}")
@@ -386,12 +401,12 @@ note.grid(padx=10, pady=10, row=0, column=0)
 # Python 下载页面
 version_label = ttk.Label(frame, text="Select Python Version:")
 version_label.grid(row=0, column=0, pady=10, sticky="e")
-
+VERSIONS=sort_version(VERSIONS)
 selected_version = tk.StringVar()
 version_combobox = ttk.Combobox(
-    frame, textvariable=selected_version, values=[""], state="readonly"
+    frame, textvariable=selected_version,values=VERSIONS, state="readonly"
 )
-version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w",values=VERSIONS)
+version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
 version_combobox.current(0)
 
 
