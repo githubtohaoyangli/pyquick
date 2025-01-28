@@ -9,6 +9,17 @@ import time
 import wget
 import logging
 
+VERSIONS = [
+    "3.13.0","3.13.1",
+    "3.12.0","3.12.1","3.12.2","3.12.3","3.12.4","3.12.5","3.12.6","3.12.7","3.12.8",
+    "3.11.0","3.11.1","3.11.2","3.11.3","3.11.4","3.11.5","3.11.6","3.11.7","3.11.8","3.11.9",
+    "3.10.0","3.10.1","3.10.2","3.10.3","3.10.4","3.10.5","3.10.6","3.10.7","3.10.8","3.10.9","3.10.10","3.10.11",
+    "3.9.0","3.9.1","3.9.2","3.9.3","3.9.4","3.9.5","3.9.6","3.9.7","3.9.8","3.9.9",
+    "3.8.0","3.8.1","3.8.2","3.8.3","3.8.4","3.8.5","3.8.6","3.8.7","3.8.8","3.8.9","3.8.10",
+    "3.7.0","3.7.1","3.7.2","3.7.3","3.7.4","3.7.5","3.7.6","3.7.7","3.7.8","3.7.9",
+    "3.6.0","3.6.1","3.6.2","3.6.3","3.6.4","3.6.5","3.6.6","3.6.7","3.6.8",
+    "3.5.0","3.5.1","3.5.2","3.5.3","3.5.4",
+]
 
 # 禁用 SSL 警告
 requests.packages.urllib3.disable_warnings()
@@ -380,11 +391,10 @@ selected_version = tk.StringVar()
 version_combobox = ttk.Combobox(
     frame, textvariable=selected_version, values=[""], state="readonly"
 )
-version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
+version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w",values=VERSIONS)
 version_combobox.current(0)
 
-version_reload_button = ttk.Button(frame, text="Reload", command=python_version_reload)
-version_reload_button.grid(row=0, column=2)
+
 
 destination_label = ttk.Label(frame, text="Select Destination:")
 destination_label.grid(row=1, column=0, pady=10, sticky="e")
