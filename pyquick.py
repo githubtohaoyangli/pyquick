@@ -14,12 +14,17 @@ import sv_ttk
 import urllib3
 from bs4 import BeautifulSoup
 import urllib3
+import platform
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 ssl.create_default_context=ssl._create_unverified_context()
 # 禁用 SSL 警告
 urllib3.disable_warnings()
+def get_system_build():
+    """获取系统版本"""
+    system_build=int(str(platform.platform().split("-")[2]).split(".")[2])
+    return system_build
 
 # 获取当前工作目录
 MY_PATH = os.getcwd()
@@ -63,10 +68,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 1):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: 2.0 dev\nBuild: 1931\nExpiration time:2025/3/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magical dev\nBuild: 1931\nExpiration time:2025/3/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: 2.0 dev\nBuild: 1931\nExpiration time:2025/3/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magical dev\nBuild: 1931\nExpiration time:2025/3/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -149,12 +154,13 @@ def python_dowload_url_reload(url):
         r8=r'win32[a-z][a-z]\d+/'
         r9=r'arm64[a-z][a-z]\d+/'
         r10=r'[a-z]+/'#最有用
+        r11=r'\S+/'
         if url!= "https://www.python.org/ftp/python/":
             with requests.get(url,verify=False) as r:
                 bs = BeautifulSoup(r.content, "lxml")
                 results = []
                 for i in bs.find_all("a"):
-                    if (i.text != "../" )and(i.text!="previous/") and(re.match(r10,i.text)==None)and(i.text!="rpms/")and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text) and (re.match(r7,i.text)==None)  and (re.match(r8,i.text)==None) and (re.match(r9,i.text)==None):
+                    if (i.text != "../" )and(i.text!="previous/")and(re.match(r11,i.text)==None) and(re.match(r10,i.text)==None)and(i.text!="rpms/")and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text) and (re.match(r7,i.text)==None)  and (re.match(r8,i.text)==None) and (re.match(r9,i.text)==None) and ("mac" not in i.text) and ("Mac" not in i.text) and ("MacOS" not in i.text):
                         results.append(i.text)
                 if results:
                     if results:
@@ -390,12 +396,12 @@ def cancel_download():
     global canneled
     is_downloading = False
     if executor:
-        for i in range(50):
+        for i in range(5000):
             executor.shutdown(wait=False)   
         canneled=1
         cancel_button.config(state="disabled")  # 禁用取消下载按钮
         progress_bar['value'] = 0
-        time.sleep(0.5)
+        time.sleep(2)
         os.remove(destination)
 
 
@@ -614,7 +620,7 @@ if __name__ == "__main__":
         messagebox.showerror("Error", "This program cannot be opened after March 13, 2025.")
         exit(1)
     root = tk.Tk()
-    root.title("Python_Tool")
+    root.title("PyQuick")
     root.resizable(False, False)
     icon_path = os.path.join(MY_PATH, 'pyquick.ico')
     if os.path.exists(icon_path):
@@ -715,14 +721,18 @@ if __name__ == "__main__":
 
     package_status_label = ttk.Label(pip_frame, text="", padding="5")
     package_status_label.grid(row=4, column=0, columnspan=3, pady=5, padx=5)
-
-    switch = tk.BooleanVar()
-    themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
-    themes.grid(row=1, column=0, pady=10, padx=5, sticky="w")
+    build=get_system_build()
+    if build>22000:
+        switch = tk.BooleanVar()
+        themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
+        themes.grid(row=1, column=0, pady=10, padx=5, sticky="w")
 
     #启动预加载
-    load_theme()
+    
+    if build>22000:
+        #messagebox.showerror("Error", "Windows 10 1809 or later is required to run this program.")
+        load_theme()
     threading.Thread(target=show_name, daemon=True).start()
-    read_python_version()
+    threading.Thread(target=read_python_version, daemon=True).start()
     threading.Thread(target=check_python_installation, daemon=True).start()
     root.mainloop()
