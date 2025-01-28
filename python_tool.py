@@ -23,13 +23,13 @@ urllib3.disable_warnings()
 
 # 获取当前工作目录
 MY_PATH = os.getcwd()
-
-
+if ".py"in os.path.basename(__file__):
+    version_pyquick="1931_code"
+else:
+    version_pyquick="1931"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
-config_path=os.path.join(config_path_base,"1931")
-
-
+config_path=os.path.join(config_path_base,version_pyquick)
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
     os.makedirs(config_path)
