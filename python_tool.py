@@ -8,7 +8,7 @@ import sv_ttk
 import time
 import wget
 import logging
-from bs4 import BeautifulSoup
+
 
 # 禁用 SSL 警告
 requests.packages.urllib3.disable_warnings()
@@ -142,21 +142,7 @@ def check_pip_version():
 
 
 # 获取可下载版本列表
-def python_version_reload():
-    version_reload_button.configure(state="disabled", text="Reloading...")
-    root.update()
-    with requests.get("https://www.python.org/ftp/python/", stream=False) as r:
-        try:
-            doc = BeautifulSoup(r.content, "lxml")
-            versions = doc.find_all("a")[1:-19]
-            results = []
-            for i in versions:
-                results.append(i.text[:-1])
-        except Exception as e:
-            logging.error(f"Reload wrong:{e}")
-        version_combobox.configure(values=results)
-    version_reload_button.configure(state="normal", text="Reload")
-    root.update()
+
 
 
 # 下载选定版本的 Python
