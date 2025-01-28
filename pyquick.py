@@ -68,10 +68,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 1):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magical dev\nBuild: 1931\nExpiration time:2025/3/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magical dev\nBuild: 1940\nExpiration time:2025/3/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magical dev\nBuild: 1931\nExpiration time:2025/3/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magical dev\nBuild: 1940\nExpiration time:2025/3/13\n{time_lim} days left.")
 
 
 # 全局变量
