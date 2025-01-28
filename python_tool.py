@@ -30,7 +30,7 @@ VERSIONS = [
 requests.packages.urllib3.disable_warnings()
 
 # 获取当前工作目录
-config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1101")
+config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1104.1")
 
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
@@ -41,6 +41,7 @@ if not os.path.exists(config_path):
 def clear():
     status_label.config(text="")
     package_label.config(text="Enter Package Name:")
+    progress_bar["value"]=0
 
 
 # 选择目标文件夹的函数
@@ -58,11 +59,14 @@ def select_destination():
 def download_file(selected_version, destination_path):
     file_name = f"python-{selected_version}-amd64.exe"
     destination = os.path.join(destination_path, file_name)
-
     # 如果文件已存在，则删除它
     if os.path.exists(destination):
         os.remove(destination)
-
+    download_button.config(state="disabled")
+    select_button.config(state="disabled")
+    version_combobox.config(state="disabled")
+    destination_entry.config(state="disabled")
+    progress_bar.config(value=0)
     def progress_bar_hook(current, total, width=80):
         progress = int(current / total * 100)
         progress_bar["value"] = progress
@@ -77,12 +81,18 @@ def download_file(selected_version, destination_path):
         # 使用 wget 下载文件
         wget.download(url, out=destination, bar=progress_bar_hook)
         status_label.config(text="Download Complete!")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
+        select_button.config(state="normal")
+        download_button.config(state="normal")
+        destination_entry.config(state="normal")
+        version_combobox.config(state="readonly")
     except Exception as e:
         status_label.config(text=f"Download Failed: {str(e)}")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
+        download_button.config(state="normal")
+        select_button.config(state="normal")
+        destination_entry.config(state="normal")
+        version_combobox.config(state="readonly")
 
 
 # 获取当前 pip 版本
@@ -213,35 +223,35 @@ def upgrade_pip():
 
 # 安装指定的包
 def install_package():
-    try:
-        install_button.config(state="disabled")
-        subprocess.check_output(
-            ["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW
-        )
-        package_name = package_entry.get()
-
-        def install_package_thread():
-            try:
-                result = subprocess.run(
-                    ["python", "-m", "pip", "install", package_name],
-                    capture_output=True,
-                    text=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
+   
+        
+    package_name = package_entry.get()
+    
+    install_button.config(state="disabled")
+    def install_package_thread():
+        try:
+            
+            installed = subprocess.run(
+                ["python", "-m", "pip", "show",package_name],capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            if f"Name: {package_name}" in installed.stdout:
+                package_label.config(
+                    text=f"Package {package_name} is already installed."
                 )
-                installed = subprocess.check_output(
-                    ["python", "-m", "pip", "list", "--format=columns"],
-                    text=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
+                install_button.config(state="normal")
+                root.after(5000, clear)
+            else:
+                result = subprocess.run(
+                ["python", "-m", "pip", "install", package_name],
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
                 )
                 if "Successfully installed" in result.stdout:
                     package_label.config(
                         text=f"Package '{package_name}' has been installed successfully!"
-                    )
-                    install_button.config(state="normal")
-                    root.after(5000, clear)
-                elif package_name.lower() in installed.lower():
-                    package_label.config(
-                        text=f"Package {package_name} is already installed."
                     )
                     install_button.config(state="normal")
                     root.after(5000, clear)
@@ -251,21 +261,16 @@ def install_package():
                     )
                     install_button.config(state="normal")
                     root.after(5000, clear)
-            except Exception as e:
-                package_label.config(
-                    text=f"Error installing package '{package_name}': {str(e)}"
-                )
-                install_button.config(state="normal")
-                root.after(5000, clear)
+        except Exception as e:
+            package_label.config(
+                text=f"Error installing package '{package_name}': {str(e)}"
+            )
+            install_button.config(state="normal")
+            root.after(5000, clear)
 
-        install_thread = threading.Thread(target=install_package_thread)
-        install_thread.start()
-    except FileNotFoundError:
-        package_label.config(text="Python is not installed.")
-        root.after(5000, clear)
-    except Exception as e:
-        package_label.config(text=f"Error: {str(e)}")
-        root.after(5000, clear)
+    install_thread = threading.Thread(target=install_package_thread)
+    install_thread.start()
+
 
 
 # 卸载指定的包
@@ -372,7 +377,7 @@ def update():
 
 
 def about():
-    about = messagebox.showinfo(title="About", message="Python_tool 1.1\nbuild:1101\n")
+    messagebox.showinfo(title="About", message="Python_tool 1.1\nbuild:1104.1(BETA)\n")
 
 
 # 创建主窗口
