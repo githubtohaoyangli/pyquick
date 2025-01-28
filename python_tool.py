@@ -8,12 +8,16 @@ import time
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, filedialog, messagebox
-
+import ssl
 import requests
 import sv_ttk
 import urllib3
 from bs4 import BeautifulSoup
+# 禁用requests出现的取消ssl验证的警告，直接引用如下
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+ssl.create_default_context=ssl._create_unverified_context()
 # 禁用 SSL 警告
 urllib3.disable_warnings()
 
@@ -22,7 +26,7 @@ MY_PATH = os.getcwd()
 print(MY_PATH)
 
 # 获取用户配置目录
-config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1024")
+config_path = os.path.join(os.environ["APPDATA"], f"pyquick","1931")
 print(config_path)
 # 如果保存目录不存在，则创建它
 if not os.path.exists(config_path):
@@ -34,10 +38,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 1):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: 2.0 dev\nBuild: 1924\nExpiration time:2025/3/13\n only {time_lim} days left.")
+                               f"Version: 2.0 dev\nBuild: 1931\nExpiration time:2025/3/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: 2.0 dev\nBuild: 1924\nExpiration time:2025/3/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: 2.0 dev\nBuild: 1931\nExpiration time:2025/3/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -54,6 +58,7 @@ def clear():
     status_label.config(text="")
     package_status_label.config(text="")
     package_label.config(text="Enter Package Name:")
+    progress_bar['value']=0
 
 
 def select_destination():
@@ -116,7 +121,7 @@ def python_dowload_url_reload(url):
         r8=r'win32[a-z][a-z]\d+/'
         r9=r'arm64[a-z][a-z]\d+/'
         if url!= "https://www.python.org/ftp/python/":
-            with requests.get(url) as r:
+            with requests.get(url,verify=False) as r:
                 bs = BeautifulSoup(r.content, "lxml")
                 results = []
                 for i in bs.find_all("a"):
@@ -134,7 +139,8 @@ def python_version_reload():
     root.update()
     url="https://www.python.org/ftp/python/"
     try:
-        with requests.get(url) as r:
+        
+        with requests.get(url,verify=False) as r:
             bs = BeautifulSoup(r.content, "lxml")
             results = []
             for i in bs.find_all("a"):
@@ -200,7 +206,7 @@ def download_chunk(url, start_byte, end_byte, destination, retries=3):
     while attempt < retries:
         try:
             # 发起HTTP请求，包含自定义请求头，启用流式响应，设置超时
-            response = requests.get(url, headers=headers, stream=True, timeout=10)
+            response = requests.get(url, headers=headers, stream=True, timeout=10,verify=False)
             # 检查响应状态码，如果状态码表示错误，则抛出异常
             response.raise_for_status()
             # 使用文件锁确保并发安全，打开文件准备写入
@@ -217,7 +223,8 @@ def download_chunk(url, start_byte, end_byte, destination, retries=3):
         except requests.RequestException as e:
             # 如果发生网络请求异常，更新状态标签并重试
             with lock:
-                status_label.config(text=f"Download Failed! Retrying... ({attempt + 1}/{retries})")
+                if canneled!=1:
+                    status_label.config(text=f"Download Failed! Retrying... ({attempt + 1}/{retries})")
             attempt += 1
     # 如果重试次数用尽仍然失败，更新状态标签并设置下载状态为False
     with lock:
@@ -268,7 +275,7 @@ def download_file(selected_version, destination_path, num_threads):
 
     # 获取文件大小
     try:
-        response = requests.head(url, timeout=10)
+        response = requests.head(url, timeout=10,verify=False)
         response.raise_for_status()
         file_size = int(response.headers['Content-Length'])
     except requests.RequestException as e:
@@ -334,6 +341,7 @@ def update_progress():
         time.sleep(0.05)
     # 如果下载状态为True，则表示下载已完成
     if is_downloading:
+        progress_bar['value']=100
         status_label.config(text="Download Complete!")
     # 如果下载状态为False，则表示下载已取消
     else:
@@ -342,14 +350,20 @@ def update_progress():
     is_downloading = False
     # 禁用取消下载按钮，防止用户在下载已完成或已取消的情况下点击按钮
     cancel_button.config(state="disabled")
+    root.after(5000,clear)
+
+
 
 
 def cancel_download():
     """取消正在进行的下载"""
     global is_downloading
+    global canneled
     is_downloading = False
     if executor:
-        executor.shutdown(wait=False)
+        for i in range(50):
+            executor.shutdown(wait=False)   
+        canneled=1
         cancel_button.config(state="disabled")  # 禁用取消下载按钮
         progress_bar['value'] = 0
         time.sleep(0.5)
@@ -366,7 +380,10 @@ def download_selected_version():
         status_label.config(text="Invalid path!")
         root.after(5000, clear)
         return
-
+    elif download_file_combobox.get()==None or download_file_combobox.get()=="":
+        status_label.config(text="Please choose a file!")
+        root.after(5000,clear)
+        return
     threading.Thread(target=download_file, args=(selected_version, destination_path, num_threads), daemon=True).start()
 
 
@@ -631,9 +648,9 @@ if __name__ == "__main__":
 
     thread_label = ttk.Label(download_frame, text="Select Number of Threads:")
     thread_label.grid(row=2, column=0, pady=5, sticky="e")
-    thread_combobox = ttk.Combobox(download_frame, values=[str(i) for i in range(1, 1025)], state="readonly")
+    thread_combobox = ttk.Combobox(download_frame, values=[str(i) for i in range(1, 129)], state="readonly")
     thread_combobox.grid(row=2, column=1, pady=5, padx=5, sticky="w")
-    thread_combobox.current(31)  # Default to 32 threads
+    thread_combobox.current(9)  # Default to 32 threads
 
     download_label= ttk.Label(download_frame, text="Choose download file:")
     download_label.grid(row=3, column=0, pady=5, sticky="e")
