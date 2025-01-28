@@ -136,18 +136,19 @@ def update_pip():
 
 # 检查并更新 pip 版本
 def check_pip_version():
+    pip_upgrade_button.config(state="disabled")
     current_version = get_pip_version()
     if current_version is None:
         package_label.config(text="Error: Failed to get current pip version")
-        time.sleep(5)
-        clear()
+        pip_upgrade_button.config(state="normal")
+        root.after(5000, clear)
         return
 
     latest_version = get_latest_pip_version()
     if latest_version is None:
         package_label.config(text="Error: Failed to get latest pip version")
-        time.sleep(5)
-        clear()
+        pip_upgrade_button.config(state="normal")
+        root.after(5000, clear)
         return
 
     if current_version != latest_version:
@@ -155,16 +156,16 @@ def check_pip_version():
         package_label.config(text=message)
         if update_pip():
             package_label.config(text=f"pip has been updated! {latest_version}")
-            time.sleep(5)
-            clear()
+            pip_upgrade_button.config(state="normal")
+            root.after(5000, clear)
         else:
             package_label.config(text="Error: Failed to update pip")
-            time.sleep(5)
-            clear()
+            pip_upgrade_button.config(state="normal")
+            root.after(5000, clear)
     else:
         package_label.config(text=f"pip is up to date: {current_version}")
-        time.sleep(5)
-        clear()
+        pip_upgrade_button.config(state="normal")
+        root.after(5000, clear)
 
 
 # 获取可下载版本列表
@@ -178,8 +179,7 @@ def download_selected_version():
 
     if not os.path.exists(destination_path):
         status_label.config(text="Invalid path!")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
         return
 
     download_thread = threading.Thread(
@@ -209,6 +209,7 @@ def upgrade_pip():
 # 安装指定的包
 def install_package():
     try:
+        install_button.config(state="disabled")
         subprocess.check_output(
             ["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW
         )
@@ -231,42 +232,41 @@ def install_package():
                     package_label.config(
                         text=f"Package '{package_name}' has been installed successfully!"
                     )
-                    time.sleep(5)
-                    clear()
+                    install_button.config(state="normal")
+                    root.after(5000, clear)
                 elif package_name.lower() in installed.lower():
                     package_label.config(
                         text=f"Package {package_name} is already installed."
                     )
-                    time.sleep(5)
-                    clear()
+                    install_button.config(state="normal")
+                    root.after(5000, clear)
                 else:
                     package_label.config(
                         text=f"Error installing package '{package_name}': {result.stderr}"
                     )
-                    time.sleep(5)
-                    clear()
+                    install_button.config(state="normal")
+                    root.after(5000, clear)
             except Exception as e:
                 package_label.config(
                     text=f"Error installing package '{package_name}': {str(e)}"
                 )
-                time.sleep(5)
-                clear()
+                install_button.config(state="normal")
+                root.after(5000, clear)
 
         install_thread = threading.Thread(target=install_package_thread)
         install_thread.start()
     except FileNotFoundError:
         package_label.config(text="Python is not installed.")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
     except Exception as e:
         package_label.config(text=f"Error: {str(e)}")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
 
 
 # 卸载指定的包
 def uninstall_package():
     try:
+        uninstall_button.config(state="disabled")
         subprocess.check_output(
             ["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW
         )
@@ -289,32 +289,30 @@ def uninstall_package():
                     package_label.config(
                         text=f"Package '{package_name}' has been uninstalled successfully!"
                     )
-                    time.sleep(5)
-                    clear()
+                    uninstall_button.config(state="normal")
+                    root.after(5000, clear)
                 else:
                     package_label.config(
                         text=f"Error uninstalling package '{package_name}': {result.stderr}"
                     )
-                    time.sleep(5)
-                    clear()
+                    uninstall_button.config(state="normal")
+                    root.after(5000, clear)
             else:
                 package_label.config(text=f"Package '{package_name}' is not installed.")
-                time.sleep(5)
-                clear()
+                uninstall_button.config(state="normal")
+                root.after(5000, clear)
         except Exception as e:
             package_label.config(
                 text=f"Error uninstalling package '{package_name}': {str(e)}"
             )
-            time.sleep(5)
-            clear()
+            uninstall_button.config(state="normal")
+            root.after(5000, clear)
     except FileNotFoundError:
         package_label.config(text="Python is not installed.")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
     except Exception as e:
         package_label.config(text=f"Error: {str(e)}")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
 
 
 # 检查 Python 是否已安装
@@ -378,7 +376,7 @@ root.title("Python_Tool")
 root.resizable(False, False)
 root.iconbitmap("pythontool.ico")
 top = tk.Menu(root)
-aboutcommand = tk.Menu(top)
+aboutcommand = tk.Menu(top, tearoff=0)
 top.add_cascade(label="Help", menu=aboutcommand)
 
 aboutcommand.add_command(label="About", command=about)
