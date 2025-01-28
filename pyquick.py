@@ -170,24 +170,26 @@ def python_dowload_url_reload(url):
 
 # 获取可下载版本列表
 def python_version_reload():
-    version_reload_button.configure(state="disabled", text="Reloading...")
-    root.update()
-    url="https://www.python.org/ftp/python/"
-    try:
-        
-        with requests.get(url,verify=False) as r:
-            bs = BeautifulSoup(r.content, "lxml")
-            results = []
-            for i in bs.find_all("a"):
-                if i.text[0].isnumeric():
-                    results.append(i.text[:-1])
-            if results:
-                version_reload_button.configure(text="Sorting...")
-                sort_results(results)
-    except Exception as e:
-        logging.error(f"Python Version Reload Wrong:{e}")
-    version_reload_button.configure(state="normal", text="Reload")
-    root.update()
+    def python_version_reload_thread():
+        version_reload_button.configure(state="disabled", text="Reloading...")
+        root.update()
+        url="https://www.python.org/ftp/python/"
+        try:
+            
+            with requests.get(url,verify=False) as r:
+                bs = BeautifulSoup(r.content, "lxml")
+                results = []
+                for i in bs.find_all("a"):
+                    if i.text[0].isnumeric():
+                        results.append(i.text[:-1])
+                if results:
+                    version_reload_button.configure(text="Sorting...")
+                    sort_results(results)
+        except Exception as e:
+            logging.error(f"Python Version Reload Wrong:{e}")
+        version_reload_button.configure(state="normal", text="Reload")
+        root.update()
+    threading.Thread(target=python_version_reload_thread, daemon=True).start()
 
 
 def validate_version(version):
@@ -275,7 +277,7 @@ def show_name():
     while True:
         a=threading.Thread(target=show_name_thread, daemon=True)
         a.start()
-        time.sleep(0.6)
+        a.join()
 # 定义下载指定版本Python安装程序的函数
 def download_file(selected_version, destination_path, num_threads):
     """下载指定版本的Python安装程序"""
