@@ -71,13 +71,13 @@ with open(os.path.join(config_path_base, "path.txt"),"r") as f:
 
 def show_about():
     """显示关于对话框"""
-    if datetime.datetime.now() >= datetime.datetime(2025, 2, 1):
+    if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magical dev\nBuild: 1940\nExpiration time:2025/3/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1940\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magical dev\nBuild: 1940\nExpiration time:2025/3/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1940\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -656,8 +656,8 @@ def load_theme():
 
 
 if __name__ == "__main__":
-    if datetime.datetime.now() >= datetime.datetime(2025, 3, 13):
-        messagebox.showerror("Error", "This program cannot be opened after March 13, 2025.")
+    if datetime.datetime.now() >= datetime.datetime(2025, 4, 13):
+        messagebox.showerror("Error", "This program cannot be opened after Apr. 13, 2025.")
         exit(1)
     root = tk.Tk()
     root.title("PyQuick")
