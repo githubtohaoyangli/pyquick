@@ -17,14 +17,19 @@ import urllib3
 import platform
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-ssl.create_default_context=ssl._create_unverified_context()
-# 禁用 SSL 警告
-urllib3.disable_warnings()
 def get_system_build():
     """获取系统版本"""
     system_build=int(str(platform.platform().split("-")[2]).split(".")[2])
     return system_build
+build=get_system_build()
+PYTHON_MIRRORS=[
+    "python.org",
+    "mirrors.huaweicloud.com"
+]
+ssl.create_default_context=ssl._create_unverified_context()
+# 禁用 SSL 警告
+urllib3.disable_warnings()
+
 
 # 获取当前工作目录
 MY_PATH = os.getcwd()
@@ -398,13 +403,21 @@ def cancel_download():
     global canneled
     is_downloading = False
     if executor:
-        for i in range(5000):
+        for i in range(100000):
             executor.shutdown(wait=False)   
         canneled=1
         cancel_button.config(state="disabled")  # 禁用取消下载按钮
         progress_bar['value'] = 0
-        time.sleep(2)
-        os.remove(destination)
+        time.sleep(0.1)
+        def remove_file():
+            os.remove(destination)
+        while True:
+            try:
+                remove_file()
+            except FileNotFoundError:
+                break
+            except Exception as e:
+                pass
 
 
 def download_selected_version():
@@ -464,14 +477,17 @@ def update_pip():
 def check_pip_version():
     """检查并更新pip版本"""
     current_version = get_pip_version()
+    pip_upgrade_button.config(state="disabled")
     if current_version is None:
         package_status_label.config(text="Error: Failed to get current pip version")
+        pip_upgrade_button.config(state="normal")
         root.after(5000, clear)
         return
 
     latest_version = get_latest_pip_version()
     if latest_version is None:
         package_status_label.config(text="Error: Failed to get latest pip version")
+        pip_upgrade_button.config(state="normal")
         root.after(5000, clear)
         return
 
@@ -481,12 +497,16 @@ def check_pip_version():
         if update_pip():
             
             package_status_label.config(text=f"pip has been updated! {latest_version}")
+                
+            pip_upgrade_button.config(state="normal")
             root.after(5000, clear)
         else:
             package_status_label.config(text="Error: Failed to update pip")
+            pip_upgrade_button.config(state="normal")
             root.after(5000, clear)
     else:
         package_status_label.config(text=f"pip is up to date: {current_version}")
+        pip_upgrade_button.config(state="normal")
         root.after(5000, clear)
 
 
@@ -507,7 +527,7 @@ def install_package():
     """安装指定的Python包"""
     
     package_name = package_entry.get()
-
+    install_button.config(state="disabled")
     def install_package_thread():
         try:
             #PyQt5_sip12.16.1(14)
@@ -518,17 +538,21 @@ def install_package():
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"Name: {package_name}" in find_packages.stdout:
                 package_status_label.config(text=f"Package '{package_name}' is already installed.")
+                install_button.config(state="normal")
                 root.after(5000, clear)
                 return
             else:
                 if "Successfully installed" in result.stdout:
                     package_status_label.config(text=f"Package '{package_name}' has been installed successfully!")
+                    install_button.config(state="normal")
                     root.after(5000, clear)
                 else:
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
+                    install_button.config(state="normal")
                     root.after(5000, clear)
         except Exception as e:
             package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
+            install_button.config(state="normal")
             root.after(5000, clear)
 
     threading.Thread(target=install_package_thread,daemon=True).start()
@@ -537,6 +561,7 @@ def install_package():
 def uninstall_package():
     """卸载指定的Python包"""
     package_name = package_entry.get()
+    uninstall_button.config(state="disabled")
     def uninstall_package_thread():
         try:
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
@@ -551,14 +576,17 @@ def uninstall_package():
                 
                 if "Successfully uninstalled" in result.stdout:
                     package_status_label.config(text=f"Package '{package_name}' has been uninstalled successfully!")
+                    uninstall_button.config(state="normal")
                     root.after(5000, clear) 
                 
                 else:
                     package_status_label.config(text=f"Error uninstalling package '{package_name}': {result.stderr}")
+                    uninstall_button.config(state="normal")
                     root.after(5000, clear)
                 
         except Exception as e:
             package_status_label.config(text=f"Error uninstalling package '{package_name}': {str(e)}")
+            uninstall_button.config(state="normal")
             root.after(5000, clear)
     threading.Thread(target=uninstall_package_thread,daemon=True).start()
 
@@ -573,48 +601,45 @@ def check_python_installation():
         pip_upgrade_button.config(state="disabled")
         install_button.config(state="disabled")
         uninstall_button.config(state="disabled")
-        time.sleep(5)
-        clear()
+        root.after(5000, clear)
 
 
 def switch_theme():
     """切换主题"""
-    if switch.get():
-        sv_ttk.set_theme("dark")
-        save_theme("dark")
-    else:
-        sv_ttk.set_theme("light")
-        save_theme("light")
+    if build>22000:
+        if switch.get():
+            sv_ttk.set_theme("dark")
+            save_theme("dark")
+        else:
+            sv_ttk.set_theme("light")
+            save_theme("light")
 
 
 def save_theme(theme):
     """保存主题设置"""
-    with open(os.path.join(config_path, "theme.txt"), "w") as a:
-        a.write(theme)
+    if build>22000:
+        with open(os.path.join(config_path, "theme.txt"), "w") as a:
+            a.write(theme)
+    else:
+        if os.path.exists(os.path.join(config_path, "theme.txt")):
+            os.remove(os.path.join(config_path, "theme.txt"))
 
 
 def load_theme():
     """加载主题设置"""
-    try:
-        with open(os.path.join(config_path, "theme.txt"), "r") as r:
-            theme = r.read()
-        if theme == "dark":
-            switch.set(True)
-            sv_ttk.set_theme("dark")
-        elif theme == "light":
-            switch.set(False)
+    if build>22000:
+        try:
+            with open(os.path.join(config_path, "theme.txt"), "r") as r:
+                theme = r.read()
+            if theme == "dark":
+                switch.set(True)
+                sv_ttk.set_theme("dark")
+            elif theme == "light":
+                switch.set(False)
+                sv_ttk.set_theme("light")
+        except:
             sv_ttk.set_theme("light")
-    except:
-        sv_ttk.set_theme("light")
 
-
-def update():
-    """检查更新"""
-    r = requests.get("https://githubtohaoyangli.github.io/info/info.json")
-    ver = r.json()["releases"]["release1"]["version"]
-    myver = "1.1.0"
-    if ver > myver:
-        pass
 
 
 if __name__ == "__main__":
@@ -723,7 +748,7 @@ if __name__ == "__main__":
 
     package_status_label = ttk.Label(pip_frame, text="", padding="5")
     package_status_label.grid(row=4, column=0, columnspan=3, pady=5, padx=5)
-    build=get_system_build()
+    
     if build>22000:
         switch = tk.BooleanVar()
         themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)

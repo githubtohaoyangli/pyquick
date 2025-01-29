@@ -27,7 +27,7 @@ class Widget(QFrame):
 class start_pyquick(QFrame):
     def start(self):
         w.hide()
-        subprocess.run([sys.executable, './python_tool.py'])
+        subprocess.run([sys.executable, './pyquick.py'])
         w.show()
 
     def __init__(self, text: str, parent=None):
