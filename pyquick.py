@@ -22,6 +22,7 @@ def get_system_build():
     system_build=int(str(platform.platform().split("-")[2]).split(".")[2])
     return system_build
 build=get_system_build()
+#print(build)查看系统build版本是否达标，如果不是Windows11(build>=22000)则无sv_ttk使用权，只能使用ttk 
 PYTHON_MIRRORS=[
     "python.org",
     "mirrors.huaweicloud.com"
@@ -34,9 +35,9 @@ urllib3.disable_warnings()
 # 获取当前工作目录
 MY_PATH = os.getcwd()
 if ".py"in os.path.basename(__file__):
-    version_pyquick="1931_code"
+    version_pyquick="1940_code"
 else:
-    version_pyquick="1931"
+    version_pyquick="1940"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -50,7 +51,7 @@ with open(os.path.join(config_path_base, "path.txt"),"r") as f:
     """
     pathed:已有的路径
     """
-    print(os.path.join(config_path_base, "path.txt"))
+    #print(os.path.join(config_path_base, "path.txt"))
     pathed=[]
     a=f.readlines()
     for i in a:
@@ -194,7 +195,9 @@ def python_version_reload():
             logging.error(f"Python Version Reload Wrong:{e}")
         version_reload_button.configure(state="normal", text="Reload")
         root.update()
-    threading.Thread(target=python_version_reload_thread, daemon=True).start()
+    a=threading.Thread(target=python_version_reload_thread, daemon=True)
+    a.start()
+    
 
 
 def validate_version(version):
@@ -283,6 +286,7 @@ def show_name():
         a=threading.Thread(target=show_name_thread, daemon=True)
         a.start()
         a.join()
+        time.sleep(0.3)
 # 定义下载指定版本Python安装程序的函数
 def download_file(selected_version, destination_path, num_threads):
     """下载指定版本的Python安装程序"""
@@ -349,12 +353,15 @@ def download_file(selected_version, destination_path, num_threads):
         def start():
             futures.append(executor.submit(download_chunk, url, start_byte, end_byte, destination))
 
-        threading.Thread(target=start, daemon=True).start()
-
-    # 启动一个线程来更新下载进度
-    threading.Thread(target=update_progress, daemon=True).start()
-    # 启用取消下载按钮
+        b=threading.Thread(target=start, daemon=True)
+        b.start()
+        b.join()
     cancel_button.config(state="normal")
+    # 启动一个线程来更新下载进度
+    a=threading.Thread(target=update_progress, daemon=True)
+    a.start()
+    # 启用取消下载按钮
+    
 
 
 def update_progress():
@@ -385,9 +392,11 @@ def update_progress():
     if is_downloading:
         progress_bar['value']=100
         status_label.config(text="Download Complete!")
+        download_button.config(state="normal")
     # 如果下载状态为False，则表示下载已取消
     else:
         status_label.config(text="Download Cancelled!")
+        download_button.config(state="normal")
     # 将下载状态设置为False，表示下载已完成或已取消
     is_downloading = False
     # 禁用取消下载按钮，防止用户在下载已完成或已取消的情况下点击按钮
@@ -406,7 +415,8 @@ def cancel_download():
         for i in range(100000):
             executor.shutdown(wait=False)   
         canneled=1
-        cancel_button.config(state="disabled")  # 禁用取消下载按钮
+        cancel_button.config(state="disabled")
+        download_button.config(state="normal")  # 禁用取消下载按钮
         progress_bar['value'] = 0
         time.sleep(0.1)
         def remove_file():
@@ -434,6 +444,7 @@ def download_selected_version():
         status_label.config(text="Please choose a file!")
         root.after(5000,clear)
         return
+    download_button.config(state="disabled")
     threading.Thread(target=download_file, args=(selected_version, destination_path, num_threads), daemon=True).start()
 
 
@@ -476,8 +487,8 @@ def update_pip():
 
 def check_pip_version():
     """检查并更新pip版本"""
-    current_version = get_pip_version()
     pip_upgrade_button.config(state="disabled")
+    current_version = get_pip_version()
     if current_version is None:
         package_status_label.config(text="Error: Failed to get current pip version")
         pip_upgrade_button.config(state="normal")
@@ -496,7 +507,7 @@ def check_pip_version():
         package_status_label.config(text=message)
         if update_pip():
             
-            package_status_label.config(text=f"pip has been updated! {latest_version}")
+            package_status_label.config(text=f"pip has been updated! {current_version}-->{latest_version}")
                 
             pip_upgrade_button.config(state="normal")
             root.after(5000, clear)
@@ -513,6 +524,7 @@ def check_pip_version():
 def upgrade_pip():
     """启动pip版本检查线程"""
     try:
+        pip_upgrade_button.config(state="disabled")
         subprocess.check_output(["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW)
         threading.Thread(target=check_pip_version, daemon=True).start()
     except FileNotFoundError:
@@ -520,6 +532,7 @@ def upgrade_pip():
         root.after(5000, clear)
     except Exception as e:
         package_status_label.config(text=f"Error: {str(e)}")
+        pip_upgrade_button.config(state="normal")
         root.after(5000, clear)
 
 
@@ -726,7 +739,7 @@ if __name__ == "__main__":
     status_label.grid(row=7, column=0, columnspan=3, pady=5, padx=5)
 
     # pip Management Frame
-    pip_upgrade_button = ttk.Button(pip_frame, text="Upgrade pip", command=upgrade_pip)
+    pip_upgrade_button = ttk.Button(pip_frame, text="Check Pip Version", command=upgrade_pip)
     pip_upgrade_button.grid(row=0, column=0, columnspan=3, pady=10, padx=5)
 
 
@@ -760,6 +773,7 @@ if __name__ == "__main__":
         #messagebox.showerror("Error", "Windows 10 1809 or later is required to run this program.")
         load_theme()
     threading.Thread(target=show_name, daemon=True).start()
+    #show_name()
     threading.Thread(target=read_python_version, daemon=True).start()
     threading.Thread(target=check_python_installation, daemon=True).start()
     root.mainloop()
