@@ -78,10 +78,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1946\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1946.1000\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1946\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1946.1000\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -250,8 +250,8 @@ def download_chunk(url, start_byte, end_byte, destination, retries=3):
     :param start_byte: 开始下载的字节位置
     :param end_byte: 结束下载的字节位置
     :param destination: 文件保存的目标路径
-    :param retries: 最大重试次数，默认为3次
-    :return: 如果下载成功返回True，否则返回False
+    :param retries: 最大重试次数,默认为3次
+    :return: 如果下载成功返回True,否则返回False
     """
     global is_downloading
     # 构造请求头，指定下载的字节范围
@@ -813,6 +813,13 @@ if __name__ == "__main__":
     if datetime.datetime.now() >= datetime.datetime(2025, 4, 13):
         messagebox.showerror("Error", "This program cannot be opened after Apr. 13, 2025.")
         exit(1)
+    if build<=9200:
+        messagebox.showerror("Error", "Please upgrade to Windows 8.1, or you can not use this program.")
+        exit(1)
+    elif build>=9600 and build<=18363:
+        messagebox.showwarning("Warning", "These versions are ending their support.")
+    elif build<22000:
+        messagebox.showinfo("Advise","Upgrade to Windows 11 for a better experience.(Windows 11 supports sv_ttk Completely!)")
     root = tk.Tk()
     root.title("PyQuick")
     root.resizable(False, False)
@@ -831,7 +838,7 @@ if __name__ == "__main__":
     download_frame = ttk.Frame(note, padding="10")
     pip_frame = ttk.Frame(note, padding="10")
     note.add(download_frame, text="Python Download")
-    note.add(pip_frame, text="pip Management")
+    note.add(pip_frame, text="Pip Management")
     note.grid(padx=10, pady=10, row=0, column=0)
 
     # Python Download Frame
