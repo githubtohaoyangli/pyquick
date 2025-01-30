@@ -20,6 +20,7 @@ import urllib3
 import platform
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 def get_system_build():
     """获取系统版本"""
     system_build=int(str(platform.platform().split("-")[2]).split(".")[2])
@@ -293,34 +294,39 @@ def show_name():
         a.start()
         a.join()
         time.sleep(0.3)
+
+def return_normal():
+    download_button.config(state="normal")
+    version_reload_button.config(state="normal")
+    version_combobox.config(state="normal")
+    destination_entry.config(state="normal")
+    thread_combobox.config(state="normal")
+    download_file_combobox.config(state="normal")
+    select_button.config(state="normal")
+    time.sleep(0.2)
+    progress_bar.stop()
+    progress_bar.config(mode="determinate")
+    progress_bar['value']=0
+    progress_bar['maximum']=100
+    root.after(5000, clear)
 # 定义下载指定版本Python安装程序的函数
 def download_file(selected_version, destination_path, num_threads):
     """下载指定版本的Python安装程序"""
+    progress_bar.config(mode="indeterminate")
+    progress_bar.start(10)
+    cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
+    cancel_button.config(state="normal")
     global file_size, executor, futures, downloaded_bytes, is_downloading, destination
     # 验证版本号是否有效
     if not validate_version(selected_version):
         status_label.config(text="Invalid version number")
-        download_button.config(state="normal")
-        version_reload_button.config(state="normal")
-        version_combobox.config(state="normal")
-        destination_entry.config(state="normal")
-        thread_combobox.config(state="normal")
-        download_file_combobox.config(state="normal")
-        select_button.config(state="normal")
-        root.after(5000, clear)
+        return_normal()
         return
 
     # 验证目标路径是否有效
     if not validate_path(destination_path):
         status_label.config(text="Invalid destination path")
-        download_button.config(state="normal")
-        version_reload_button.config(state="normal")
-        version_combobox.config(state="normal")
-        destination_entry.config(state="normal")
-        thread_combobox.config(state="normal")
-        download_file_combobox.config(state="normal")
-        select_button.config(state="normal")
-        root.after(5000, clear)
+        return_normal()
         return
 
     # 构造文件名和目标路径
@@ -333,14 +339,7 @@ def download_file(selected_version, destination_path, num_threads):
             os.remove(destination)
         except (PermissionError, FileNotFoundError) as e:
             status_label.config(text=f"Failed to remove existing file: {str(e)}")
-            download_button.config(state="normal")
-            version_reload_button.config(state="normal")
-            version_combobox.config(state="normal")
-            destination_entry.config(state="normal")
-            thread_combobox.config(state="normal")
-            download_file_combobox.config(state="normal")
-            select_button.config(state="normal")
-            root.after(5000, clear)
+            return_normal()
             return
 
     # 构造下载URL
@@ -353,14 +352,7 @@ def download_file(selected_version, destination_path, num_threads):
         file_size = int(response.headers['Content-Length'])
     except requests.RequestException as e:
         status_label.config(text=f"Failed to get file size: {str(e)}")
-        download_button.config(state="normal")
-        version_reload_button.config(state="normal")
-        version_combobox.config(state="normal")
-        destination_entry.config(state="normal")
-        thread_combobox.config(state="normal")
-        download_file_combobox.config(state="normal")
-        select_button.config(state="normal")
-        root.after(5000, clear)
+        return_normal()
         return
 
     # 尝试创建目标文件
@@ -369,14 +361,7 @@ def download_file(selected_version, destination_path, num_threads):
             pass
     except IOError as e:
         status_label.config(text=f"Failed to create file: {str(e)}")
-        download_button.config(state="normal")
-        version_reload_button.config(state="normal")
-        version_combobox.config(state="normal")
-        destination_entry.config(state="normal")
-        thread_combobox.config(state="normal")
-        download_file_combobox.config(state="normal")
-        select_button.config(state="normal")
-        root.after(5000, clear)
+        return_normal()
         return
 
     # 计算每个线程下载的数据块大小
@@ -384,7 +369,6 @@ def download_file(selected_version, destination_path, num_threads):
     futures = []
     downloaded_bytes = [0]
     is_downloading = True
-
     # 使用线程池执行下载任务
     executor = ThreadPoolExecutor(max_workers=num_threads)
     for i in range(num_threads):
@@ -397,9 +381,11 @@ def download_file(selected_version, destination_path, num_threads):
         b=threading.Thread(target=start, daemon=True)
         b.start()
         b.join()
-    cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
-    #row=4, column=0, columnspan=3, pady=10, padx=5
-    cancel_button.config(state="normal")
+    
+    time.sleep(0.2)
+    progress_bar.config(mode="determinate")
+    progress_bar['value']=0
+    progress_bar['maximum']=100
     # 启动一个线程来更新下载进度
     a=threading.Thread(target=update_progress, daemon=True)
     a.start()
@@ -414,11 +400,18 @@ def update_progress():
     此函数在一个单独的线程中运行，以保持UI响应性。
     """
     global file_size, is_downloading
+    progress_bar.config(mode="indeterminate")
+    progress_bar.start(10)
     # 当有任何一个下载任务未完成时，继续更新进度
     while any(not future.done() for future in futures):
         # 如果下载状态为False，则停止更新进度
         if not is_downloading:
             break
+        time.sleep(0.2)
+        progress_bar.stop()
+        progress_bar.config(mode="determinate")
+        progress_bar["maximum"]=100
+        progress_bar["value"]=0
         # 计算并更新下载进度的百分比
         progress = int(downloaded_bytes[0] / file_size * 100)
         # 将已下载字节数转换为MB
@@ -859,7 +852,7 @@ if __name__ == "__main__":
     destination_label.grid(row=1, column=0, pady=10,padx=10, sticky="e")
 
 
-    destination_entry = ttk.Entry(download_frame, width=40)
+    destination_entry = ttk.Entry(download_frame, width=60)
     destination_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
 
 
@@ -878,7 +871,7 @@ if __name__ == "__main__":
     download_label.grid(row=3, column=0, pady=10,padx=10, sticky="e")
 
     
-    download_file_combobox = ttk.Combobox(download_frame, values=[''], state="readonly")
+    download_file_combobox = ttk.Combobox(download_frame, values=[''], state="readonly",width=40)
     download_file_combobox.grid(row=3, column=1, pady=10, padx=10, sticky="w")
     
 
@@ -915,7 +908,7 @@ if __name__ == "__main__":
     package_label.grid(row=1, column=0, pady=10, padx=10, sticky="e")
 
 
-    package_entry = ttk.Entry(pip_frame, width=60)
+    package_entry = ttk.Entry(pip_frame, width=80)
     package_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
 
 
