@@ -552,6 +552,8 @@ def check_pip_version():
     package_entry.config(state="disabled")
     install_button.config(state="disabled")
     uninstall_button.config(state="disabled")
+    pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+    pip_progress_bar.start(10)
     current_version = get_pip_version()
     if current_version is None:
         package_status_label.config(text="Error: Failed to get current pip version")
@@ -559,6 +561,8 @@ def check_pip_version():
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         root.after(5000, clear)
         return
 
@@ -569,6 +573,8 @@ def check_pip_version():
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         root.after(5000, clear)
         return
 
@@ -583,6 +589,8 @@ def check_pip_version():
             package_entry.config(state="normal")
             install_button.config(state="normal")
             uninstall_button.config(state="normal")
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             root.after(5000, clear)
         else:
             package_status_label.config(text="Error: Failed to update pip")
@@ -590,6 +598,8 @@ def check_pip_version():
             package_entry.config(state="normal")
             install_button.config(state="normal")
             uninstall_button.config(state="normal")
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             root.after(5000, clear)
     else:
         package_status_label.config(text=f"pip is up to date: {current_version}")
@@ -597,6 +607,8 @@ def check_pip_version():
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         root.after(5000, clear)
 
 
@@ -607,6 +619,8 @@ def upgrade_pip():
         package_entry.config(state="disabled")
         install_button.config(state="disabled")
         uninstall_button.config(state="disabled")
+        pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+        pip_progress_bar.start(10)
         subprocess.check_output(["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW)
         threading.Thread(target=check_pip_version, daemon=True).start()
     except FileNotFoundError:
@@ -618,6 +632,8 @@ def upgrade_pip():
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         root.after(5000, clear)
 
 
@@ -629,6 +645,8 @@ def install_package():
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
     uninstall_button.config(state="disabled")
+    pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+    pip_progress_bar.start(10)
     def install_package_thread():
         try:
             #PyQt5_sip12.16.1(14)
@@ -642,6 +660,8 @@ def install_package():
                 pip_upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 uninstall_button.config(state="normal")
+                pip_progress_bar.stop()
+                pip_progress_bar.grid_forget()
                 root.after(5000, clear)
                 return
             else:
@@ -653,6 +673,8 @@ def install_package():
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     root.after(5000, clear)
                 elif f"ERROR: No matching distribution found for {package_name}" in result.stderr:
                     package_status_label.config(text=f"{package_name} is not found.")
@@ -660,6 +682,8 @@ def install_package():
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     root.after(5000, clear)
                 else:
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
@@ -667,6 +691,8 @@ def install_package():
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     root.after(5000, clear)
         except Exception as e:
             package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
@@ -674,6 +700,8 @@ def install_package():
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             uninstall_button.config(state="normal")
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             root.after(5000, clear)
 
     threading.Thread(target=install_package_thread,daemon=True).start()
@@ -686,6 +714,8 @@ def uninstall_package():
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
     install_button.config(state="disabled")
+    pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+    pip_progress_bar.start(10)
     def uninstall_package_thread():
         try:
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
@@ -696,6 +726,8 @@ def uninstall_package():
                 pip_upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 install_button.config(state="normal")
+                pip_progress_bar.stop()
+                pip_progress_bar.grid_forget()
                 root.after(5000, clear)
                 return 0
             else:
@@ -708,6 +740,8 @@ def uninstall_package():
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     root.after(5000, clear) 
                 
                 else:
@@ -716,6 +750,8 @@ def uninstall_package():
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     root.after(5000, clear)
                 
         except Exception as e:
@@ -724,6 +760,8 @@ def uninstall_package():
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             install_button.config(state="normal")
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             root.after(5000, clear)
     threading.Thread(target=uninstall_package_thread,daemon=True).start()
 
@@ -888,9 +926,14 @@ if __name__ == "__main__":
     uninstall_button = ttk.Button(pip_frame, text="Uninstall Package", command=uninstall_package)
     uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
 
+    pip_progress_bar=ttk.Progressbar(pip_frame, orient='horizontal', length=300, mode='indeterminate')
+    #pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+    pip_progress_bar.grid_forget()
+    pip_progress_bar['value']=0
+
 
     package_status_label = ttk.Label(pip_frame, text="", padding="5")
-    package_status_label.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
+    package_status_label.grid(row=6, column=0, columnspan=3, pady=10, padx=10)
     
     if build>22000:
         switch = tk.BooleanVar()
