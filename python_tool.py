@@ -408,7 +408,7 @@ note.grid(padx=10, pady=10, row=0, column=0)
 
 # Python 下载页面
 version_label = ttk.Label(frame, text="Select Python Version:")
-version_label.grid(row=0, column=0, pady=10, sticky="e")
+version_label.grid(row=0, column=0, pady=10,padx=10, sticky="e")
 VERSIONS=sort_version(VERSIONS)
 selected_version = tk.StringVar()
 version_combobox = ttk.Combobox(
@@ -420,7 +420,7 @@ version_combobox.current(0)
 
 
 destination_label = ttk.Label(frame, text="Select Destination:")
-destination_label.grid(row=1, column=0, pady=10, sticky="e")
+destination_label.grid(row=1, column=0, pady=10,padx=10, sticky="e")
 
 destination_entry = ttk.Entry(frame, width=40)
 destination_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
@@ -429,7 +429,7 @@ select_button = ttk.Button(frame, text="Select Path", command=select_destination
 select_button.grid(row=1, column=2, pady=10, padx=10, sticky="w")
 
 download_button = ttk.Button(
-    frame, text="Download Selected Version", command=download_selected_version
+    frame, text="Download", command=download_selected_version
 )
 download_button.grid(row=2, column=0, columnspan=3, pady=10, padx=10)
 
@@ -449,7 +449,7 @@ upgrade_pip_button = pip_upgrade_button  # 别名，用于后续禁用/启用
 package_label = ttk.Label(framea, text="Enter Package Name:")
 package_label.grid(row=1, column=0, pady=10, padx=10, sticky="e")
 
-package_entry = ttk.Entry(framea, width=40)
+package_entry = ttk.Entry(framea, width=60)
 package_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
 
 install_button = ttk.Button(framea, text="Install Package", command=install_package)
