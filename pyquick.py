@@ -35,9 +35,9 @@ urllib3.disable_warnings()
 # 获取当前工作目录
 MY_PATH = os.getcwd()
 if ".py"in os.path.basename(__file__):
-    version_pyquick="1940_code"
+    version_pyquick="1943_code"
 else:
-    version_pyquick="1940"
+    version_pyquick="1943"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -74,10 +74,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1940\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1943\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1940\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1943\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -595,8 +595,7 @@ def install_package():
         try:
             #PyQt5_sip12.16.1(14)
             
-            result = subprocess.run(["python", "-m", "pip", "install", package_name], capture_output=True,
-                                        text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"Name: {package_name}" in find_packages.stdout:
@@ -608,6 +607,8 @@ def install_package():
                 root.after(5000, clear)
                 return
             else:
+                result = subprocess.run(["python", "-m", "pip", "install", package_name], capture_output=True,
+                                        text=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 if "Successfully installed" in result.stdout:
                     package_status_label.config(text=f"Package '{package_name}' has been installed successfully!")
                     install_button.config(state="normal")
