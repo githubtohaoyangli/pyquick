@@ -39,9 +39,9 @@ urllib3.disable_warnings()
 # 获取当前工作目录
 MY_PATH = os.getcwd()
 if ".py"in os.path.basename(__file__):
-    version_pyquick="1943_code"
+    version_pyquick="1946_code"
 else:
-    version_pyquick="1943"
+    version_pyquick="1946"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -78,10 +78,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1943.1\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1946\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1943.1\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1946\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -197,7 +197,10 @@ def python_version_reload():
                     sort_results(results)
         except Exception as e:
             logging.error(f"Python Version Reload Wrong:{e}")
-        version_reload_button.configure(state="normal", text="Reload")
+        if is_downloading:
+            version_reload_button.configure(state="disabled", text="Reload")
+        else:
+            version_reload_button.configure(state="normal", text="Reload")
         root.update()
     a=threading.Thread(target=python_version_reload_thread, daemon=True)
     a.start()
@@ -303,7 +306,7 @@ def return_normal():
     thread_combobox.config(state="normal")
     download_file_combobox.config(state="normal")
     select_button.config(state="normal")
-    time.sleep(0.2)
+    cancel_button.grid_forget()
     progress_bar.stop()
     progress_bar.config(mode="determinate")
     progress_bar['value']=0
@@ -381,7 +384,6 @@ def download_file(selected_version, destination_path, num_threads):
         b=threading.Thread(target=start, daemon=True)
         b.start()
         b.join()
-    
     time.sleep(0.2)
     progress_bar.config(mode="determinate")
     progress_bar['value']=0
@@ -428,23 +430,11 @@ def update_progress():
     if is_downloading:
         progress_bar['value']=100
         status_label.config(text="Download Complete!")
-        download_button.config(state="normal")
-        version_reload_button.config(state="normal")
-        version_combobox.config(state="normal")
-        destination_entry.config(state="normal")
-        thread_combobox.config(state="normal")
-        download_file_combobox.config(state="normal")
-        select_button.config(state="normal")
+        return_normal()
     # 如果下载状态为False，则表示下载已取消
     else:
         status_label.config(text="Download Cancelled!")
-        download_button.config(state="normal")
-        version_reload_button.config(state="normal")
-        version_combobox.config(state="normal")
-        destination_entry.config(state="normal")
-        thread_combobox.config(state="normal")
-        download_file_combobox.config(state="normal")
-        select_button.config(state="normal")
+        return_normal()
     # 将下载状态设置为False，表示下载已完成或已取消
     is_downloading = False
     # 禁用取消下载按钮，防止用户在下载已完成或已取消的情况下点击按钮
@@ -460,17 +450,19 @@ def cancel_download():
     global canneled
     is_downloading = False
     if executor:
-        for i in range(100000):
-            executor.shutdown(wait=False)   
-        canneled=1
         cancel_button.config(state="disabled")
         download_button.config(state="normal")  # 禁用取消下载按钮
         progress_bar['value'] = 0
+        def cancel_threads():
+            executor.shutdown(wait=False)   
+        canneled=1
         time.sleep(0.1)
         def remove_file():
             os.remove(destination)
         while True:
             try:
+                for i in range(100):
+                    cancel_threads()
                 remove_file()
             except FileNotFoundError:
                 break
@@ -488,7 +480,7 @@ def download_selected_version():
         status_label.config(text="Invalid path!")
         root.after(5000, clear)
         return
-    elif download_file_combobox.get()==None or download_file_combobox.get()=="":
+    if download_file_combobox.get()==None or download_file_combobox.get()=="":
         status_label.config(text="Please choose a file!")
         root.after(5000,clear)
         return
@@ -499,6 +491,9 @@ def download_selected_version():
     thread_combobox.config(state="disabled")
     download_file_combobox.config(state="disabled")
     version_reload_button.config(state="disabled")
+    cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
+    cancel_button.config(state="normal")
+    clear()
     threading.Thread(target=download_file, args=(selected_version, destination_path, num_threads), daemon=True).start()
 
 
@@ -547,27 +542,28 @@ def check_pip_version():
     uninstall_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
+    clear()
     current_version = get_pip_version()
     if current_version is None:
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         package_status_label.config(text="Error: Failed to get current pip version")
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
-        pip_progress_bar.stop()
-        pip_progress_bar.grid_forget()
         root.after(5000, clear)
         return
 
     latest_version = get_latest_pip_version()
     if latest_version is None:
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         package_status_label.config(text="Error: Failed to get latest pip version")
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
-        pip_progress_bar.stop()
-        pip_progress_bar.grid_forget()
         root.after(5000, clear)
         return
 
@@ -575,33 +571,32 @@ def check_pip_version():
         message = f"Current pip version: {current_version}\nLatest pip version: {latest_version}\nUpdating pip..."
         package_status_label.config(text=message)
         if update_pip():
-            
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             package_status_label.config(text=f"pip has been updated! {current_version}-->{latest_version}")
-                
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             install_button.config(state="normal")
             uninstall_button.config(state="normal")
-            pip_progress_bar.stop()
-            pip_progress_bar.grid_forget()
+            
             root.after(5000, clear)
         else:
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             package_status_label.config(text="Error: Failed to update pip")
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             install_button.config(state="normal")
             uninstall_button.config(state="normal")
-            pip_progress_bar.stop()
-            pip_progress_bar.grid_forget()
             root.after(5000, clear)
     else:
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
         package_status_label.config(text=f"pip is up to date: {current_version}")
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
-        pip_progress_bar.stop()
-        pip_progress_bar.grid_forget()
         root.after(5000, clear)
 
 
@@ -614,6 +609,7 @@ def upgrade_pip():
         uninstall_button.config(state="disabled")
         pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
         pip_progress_bar.start(10)
+        clear()
         subprocess.check_output(["python", "--version"], creationflags=subprocess.CREATE_NO_WINDOW)
         threading.Thread(target=check_pip_version, daemon=True).start()
     except FileNotFoundError:
@@ -634,6 +630,7 @@ def install_package():
     """安装指定的Python包"""
     
     package_name = package_entry.get()
+    clear()
     install_button.config(state="disabled")
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
@@ -648,53 +645,53 @@ def install_package():
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"Name: {package_name}" in find_packages.stdout:
+                pip_progress_bar.stop()
+                pip_progress_bar.grid_forget()
                 package_status_label.config(text=f"Package '{package_name}' is already installed.")
                 install_button.config(state="normal")
                 pip_upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 uninstall_button.config(state="normal")
-                pip_progress_bar.stop()
-                pip_progress_bar.grid_forget()
                 root.after(5000, clear)
                 return
             else:
                 result = subprocess.run(["python", "-m", "pip", "install", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 if "Successfully installed" in result.stdout:
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Package '{package_name}' has been installed successfully!")
                     install_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
-                    uninstall_button.config(state="normal")
-                    pip_progress_bar.stop()
-                    pip_progress_bar.grid_forget()
+                    uninstall_button.config(state="normal")                    
                     root.after(5000, clear)
                 elif f"ERROR: No matching distribution found for {package_name}" in result.stderr:
-                    package_status_label.config(text=f"{package_name} is not found.")
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
+                    package_status_label.config(text=f"{package_name} is not found from the Internet.")
                     install_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
-                    uninstall_button.config(state="normal")
-                    pip_progress_bar.stop()
-                    pip_progress_bar.grid_forget()
+                    uninstall_button.config(state="normal")          
                     root.after(5000, clear)
                 else:
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
                     install_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
-                    pip_progress_bar.stop()
-                    pip_progress_bar.grid_forget()
                     root.after(5000, clear)
         except Exception as e:
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
             install_button.config(state="normal")
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             uninstall_button.config(state="normal")
-            pip_progress_bar.stop()
-            pip_progress_bar.grid_forget()
             root.after(5000, clear)
 
     threading.Thread(target=install_package_thread,daemon=True).start()
@@ -702,6 +699,7 @@ def install_package():
 
 def uninstall_package():
     """卸载指定的Python包"""
+    clear()
     package_name = package_entry.get()
     uninstall_button.config(state="disabled")
     pip_upgrade_button.config(state="disabled")
@@ -709,18 +707,19 @@ def uninstall_package():
     install_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
+    
     def uninstall_package_thread():
         try:
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
+                pip_progress_bar.stop()
+                pip_progress_bar.grid_forget()
                 package_status_label.config(text=f"Package '{package_name}' is not installed.")
                 uninstall_button.config(state="normal")
                 pip_upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 install_button.config(state="normal")
-                pip_progress_bar.stop()
-                pip_progress_bar.grid_forget()
                 root.after(5000, clear)
                 return 0
             else:
@@ -728,33 +727,33 @@ def uninstall_package():
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 
                 if "Successfully uninstalled" in result.stdout:
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Package '{package_name}' has been uninstalled successfully!")
                     uninstall_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
-                    pip_progress_bar.stop()
-                    pip_progress_bar.grid_forget()
                     root.after(5000, clear) 
                 
                 else:
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Error uninstalling package '{package_name}': {result.stderr}")
                     uninstall_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
-                    pip_progress_bar.stop()
-                    pip_progress_bar.grid_forget()
                     root.after(5000, clear)
                 
         except Exception as e:
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
             package_status_label.config(text=f"Error uninstalling package '{package_name}': {str(e)}")
             uninstall_button.config(state="normal")
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
-            install_button.config(state="normal")
-            pip_progress_bar.stop()
-            pip_progress_bar.grid_forget()
+            install_button.config(state="normal")           
             root.after(5000, clear)
     threading.Thread(target=uninstall_package_thread,daemon=True).start()
 
@@ -942,5 +941,4 @@ if __name__ == "__main__":
     #show_name()
     threading.Thread(target=read_python_version, daemon=True).start()
     threading.Thread(target=check_python_installation, daemon=True).start()
-    
     root.mainloop()
