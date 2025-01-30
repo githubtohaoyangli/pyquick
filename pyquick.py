@@ -74,10 +74,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1943\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1943.1\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1943\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1943.1\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -297,12 +297,26 @@ def download_file(selected_version, destination_path, num_threads):
     # 验证版本号是否有效
     if not validate_version(selected_version):
         status_label.config(text="Invalid version number")
+        download_button.config(state="normal")
+        version_reload_button.config(state="normal")
+        version_combobox.config(state="normal")
+        destination_entry.config(state="normal")
+        thread_combobox.config(state="normal")
+        download_file_combobox.config(state="normal")
+        select_button.config(state="normal")
         root.after(5000, clear)
         return
 
     # 验证目标路径是否有效
     if not validate_path(destination_path):
         status_label.config(text="Invalid destination path")
+        download_button.config(state="normal")
+        version_reload_button.config(state="normal")
+        version_combobox.config(state="normal")
+        destination_entry.config(state="normal")
+        thread_combobox.config(state="normal")
+        download_file_combobox.config(state="normal")
+        select_button.config(state="normal")
         root.after(5000, clear)
         return
 
@@ -316,6 +330,13 @@ def download_file(selected_version, destination_path, num_threads):
             os.remove(destination)
         except (PermissionError, FileNotFoundError) as e:
             status_label.config(text=f"Failed to remove existing file: {str(e)}")
+            download_button.config(state="normal")
+            version_reload_button.config(state="normal")
+            version_combobox.config(state="normal")
+            destination_entry.config(state="normal")
+            thread_combobox.config(state="normal")
+            download_file_combobox.config(state="normal")
+            select_button.config(state="normal")
             root.after(5000, clear)
             return
 
@@ -329,6 +350,13 @@ def download_file(selected_version, destination_path, num_threads):
         file_size = int(response.headers['Content-Length'])
     except requests.RequestException as e:
         status_label.config(text=f"Failed to get file size: {str(e)}")
+        download_button.config(state="normal")
+        version_reload_button.config(state="normal")
+        version_combobox.config(state="normal")
+        destination_entry.config(state="normal")
+        thread_combobox.config(state="normal")
+        download_file_combobox.config(state="normal")
+        select_button.config(state="normal")
         root.after(5000, clear)
         return
 
@@ -338,6 +366,13 @@ def download_file(selected_version, destination_path, num_threads):
             pass
     except IOError as e:
         status_label.config(text=f"Failed to create file: {str(e)}")
+        download_button.config(state="normal")
+        version_reload_button.config(state="normal")
+        version_combobox.config(state="normal")
+        destination_entry.config(state="normal")
+        thread_combobox.config(state="normal")
+        download_file_combobox.config(state="normal")
+        select_button.config(state="normal")
         root.after(5000, clear)
         return
 
@@ -616,6 +651,13 @@ def install_package():
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
                     root.after(5000, clear)
+                elif f"ERROR: No matching distribution found for {package_name}" in result.stderr:
+                    package_status_label.config(text=f"{package_name} is not found.")
+                    install_button.config(state="normal")
+                    pip_upgrade_button.config(state="normal")
+                    package_entry.config(state="normal")
+                    uninstall_button.config(state="normal")
+                    root.after(5000, clear)
                 else:
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
                     install_button.config(state="normal")
@@ -761,46 +803,46 @@ if __name__ == "__main__":
 
     # Python Download Frame
     version_label = ttk.Label(download_frame, text="Select Python Version:")
-    version_label.grid(row=0, column=0, pady=5, sticky="e")
+    version_label.grid(row=0, column=0, pady=10,padx=10, sticky="e")
 
 
     version_combobox = ttk.Combobox(download_frame, values=[''], state="readonly")
-    version_combobox.grid(row=0, column=1, pady=5, padx=5, sticky="w")
+    version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
     version_combobox.current(0)
 
     version_reload_button = ttk.Button(download_frame, text="Reload", command=python_version_reload)
-    version_reload_button.grid(row=0, column=2, sticky="w")
+    version_reload_button.grid(row=0, column=2, pady=10, padx=10, sticky="w")
 
 
     destination_label = ttk.Label(download_frame, text="Select Destination:")
-    destination_label.grid(row=1, column=0, pady=5, sticky="e")
+    destination_label.grid(row=1, column=0, pady=10,padx=10, sticky="e")
 
 
     destination_entry = ttk.Entry(download_frame, width=40)
-    destination_entry.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+    destination_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
 
 
     select_button = ttk.Button(download_frame, text="Select Path", command=select_destination)
-    select_button.grid(row=1, column=2, pady=5, padx=5, sticky="w")
+    select_button.grid(row=1, column=2, pady=10, padx=10, sticky="w")
 
     thread_label = ttk.Label(download_frame, text="Select Number of Threads:")
-    thread_label.grid(row=2, column=0, pady=5, sticky="e")
+    thread_label.grid(row=2, column=0, pady=10,padx=10, sticky="e")
 
 
     thread_combobox = ttk.Combobox(download_frame, values=[str(i) for i in range(1, 129)], state="readonly")
-    thread_combobox.grid(row=2, column=1, pady=5, padx=5, sticky="w")
+    thread_combobox.grid(row=2, column=1, pady=10, padx=10, sticky="w")
     thread_combobox.current(9)  # Default to 32 threads
 
     download_label= ttk.Label(download_frame, text="Choose download file:")
-    download_label.grid(row=3, column=0, pady=5, sticky="e")
+    download_label.grid(row=3, column=0, pady=10,padx=10, sticky="e")
 
     
     download_file_combobox = ttk.Combobox(download_frame, values=[''], state="readonly")
-    download_file_combobox.grid(row=3, column=1, pady=5, padx=5, sticky="w")
+    download_file_combobox.grid(row=3, column=1, pady=10, padx=10, sticky="w")
     
 
     download_button = ttk.Button(download_frame, text="Download", command=download_selected_version)
-    download_button.grid(row=4, column=0, columnspan=3, pady=10, padx=5)
+    download_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
 
     
     # 取消下载按钮
@@ -810,41 +852,47 @@ if __name__ == "__main__":
 
     # 下载进度
     progress_bar = ttk.Progressbar(download_frame, orient='horizontal', length=300, mode='determinate')
-    progress_bar.grid(row=6, column=0, columnspan=3, pady=10, padx=5)
+    progress_bar.grid(row=6, column=0, columnspan=3, pady=10, padx=10)
 
 
     # 下载状态
     status_label = ttk.Label(download_frame, text="", padding="5")
-    status_label.grid(row=7, column=0, columnspan=3, pady=5, padx=5)
+    status_label.grid(row=7, column=0, columnspan=3, pady=10, padx=10)
+
+
+
+
+
+
 
     # pip Management Frame
     pip_upgrade_button = ttk.Button(pip_frame, text="Check Pip Version", command=upgrade_pip)
-    pip_upgrade_button.grid(row=0, column=0, columnspan=3, pady=10, padx=5)
+    pip_upgrade_button.grid(row=0, column=0, columnspan=3, pady=10, padx=10)
 
 
     package_label = ttk.Label(pip_frame, text="Enter Package Name:")
-    package_label.grid(row=1, column=0, pady=5, padx=5, sticky="e")
+    package_label.grid(row=1, column=0, pady=10, padx=10, sticky="e")
 
 
-    package_entry = ttk.Entry(pip_frame, width=40)
-    package_entry.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+    package_entry = ttk.Entry(pip_frame, width=60)
+    package_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
 
 
     install_button = ttk.Button(pip_frame, text="Install Package", command=install_package)
-    install_button.grid(row=2, column=0, columnspan=3, pady=10, padx=5)
+    install_button.grid(row=2, column=0, columnspan=3, pady=10, padx=10)
 
 
     uninstall_button = ttk.Button(pip_frame, text="Uninstall Package", command=uninstall_package)
-    uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=5)
+    uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
 
 
     package_status_label = ttk.Label(pip_frame, text="", padding="5")
-    package_status_label.grid(row=4, column=0, columnspan=3, pady=5, padx=5)
+    package_status_label.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
     
     if build>22000:
         switch = tk.BooleanVar()
         themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
-        themes.grid(row=1, column=0, pady=10, padx=5, sticky="w")
+        themes.grid(row=1, column=0, pady=10, padx=10, sticky="w")
 
     #启动预加载
     
@@ -855,4 +903,5 @@ if __name__ == "__main__":
     #show_name()
     threading.Thread(target=read_python_version, daemon=True).start()
     threading.Thread(target=check_python_installation, daemon=True).start()
+    
     root.mainloop()
