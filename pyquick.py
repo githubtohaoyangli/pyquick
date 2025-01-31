@@ -39,9 +39,9 @@ urllib3.disable_warnings()
 # 获取当前工作目录
 MY_PATH = os.getcwd()
 if ".py"in os.path.basename(__file__):
-    version_pyquick="1946_code"
+    version_pyquick="1954_code"
 else:
-    version_pyquick="1946"
+    version_pyquick="1954"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -78,10 +78,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1946.1000\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1954\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1946.1000\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1954\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -756,7 +756,86 @@ def uninstall_package():
             install_button.config(state="normal")           
             root.after(5000, clear)
     threading.Thread(target=uninstall_package_thread,daemon=True).start()
-
+def uprade_package():
+    """升级指定的Python包"""
+    clear()
+    
+    package_name = package_entry.get()
+    upgrade_button.config(state="disabled")
+    pip_upgrade_button.config(state="disabled")
+    package_entry.config(state="disabled")
+    install_button.config(state="disabled")
+    uninstall_button.config(state="disabled")
+    pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+    pip_progress_bar.start(10)
+    
+    def upgrade_package_thread():
+        
+        try:
+            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+                                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
+                pip_progress_bar.stop()
+                pip_progress_bar.grid_forget()
+                package_status_label.config(text=f"Package '{package_name}' is not installed.")
+                upgrade_button.grid_forget()
+                pip_upgrade_button.config(state="normal")
+                package_entry.config(state="normal")
+                install_button.config(state="normal")
+                uninstall_button.config(state="normal")
+                root.after(5000, clear)
+                return 0
+            else:
+                result = subprocess.run(["python", "-m", "pip", "install", "--upgrade", package_name], capture_output=True,
+                                        text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                
+                if "Successfully installed" in result.stdout:
+                    
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
+                    package_status_label.config(text=f"Package '{package_name}' has been upgraded successfully!")
+                    upgrade_button.grid_forget()
+                    pip_upgrade_button.config(state="normal")
+                    package_entry.config(state="normal")
+                    install_button.config(state="normal")
+                    uninstall_button.config(state="normal")
+                    root.after(5000, clear) 
+                elif f"Requirement already satisfied: {package_name}" in result.stdout:
+                    
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
+                    package_status_label.config(text=f"Package '{package_name}' is already up to date.")
+                    upgrade_button.grid_forget()
+                    pip_upgrade_button.config(state="normal")
+                    package_entry.config(state="normal")
+                    install_button.config(state="normal")
+                    uninstall_button.config(state="normal")
+                    root.after(5000, clear) 
+                else:
+                    
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
+                    package_status_label.config(text=f"Error upgrading package '{package_name}': {result.stderr}")
+                    upgrade_button.grid_forget()
+                    pip_upgrade_button.config(state="normal")
+                    package_entry.config(state="normal")
+                    install_button.config(state="normal")
+                    uninstall_button.config(state="normal")
+                    root.after(5000, clear)
+                
+        except Exception as e:
+            
+            pip_progress_bar.stop()
+            pip_progress_bar.grid_forget()
+            package_status_label.config(text=f"Error upgrading package '{package_name}': {str(e)}")
+            upgrade_button.grid_forget()
+            pip_upgrade_button.config(state="normal")
+            package_entry.config(state="normal")
+            install_button.config(state="normal") 
+            uninstall_button.config(state="normal")  
+            
+            root.after(5000, clear)
+    threading.Thread(target=upgrade_package_thread,daemon=True).start()
 
 
 def check_python_installation():
@@ -809,6 +888,42 @@ def load_theme():
 
 
 
+def check_package_upgradeable():
+    def check_package_upgradeable_thread():
+        package_name = package_entry.get()
+        if package_name==None or package_name=="":
+            upgrade_button.grid_forget()
+            return 
+        try:
+            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+                                                    creationflags=subprocess.CREATE_NO_WINDOW)
+            check_upgradeable=subprocess.run(["python", "-m", "pip", "install", "--upgrade", "--dry-run", package_name], text=True,capture_output=True, 
+                                                    creationflags=subprocess.CREATE_NO_WINDOW)
+            current_version=find_packages.stdout.split("\n")[1].split(": ")[1]
+            if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
+                upgrade_button.grid_forget()
+                return
+            else:
+                latest_version=check_upgradeable.stdout.split("\n")[-2].split("-")[1]
+                
+                if f"Would install" in check_upgradeable.stdout:
+                    package_true_name=check_upgradeable.stdout.split("\n")[-2].split("-")[0].split(" ")[-1]
+                    upgrade_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
+                    upgrade_button.config(state="normal")
+                    upgrade_button.config(text=f"Upgrade Package: {package_true_name} ({current_version} -> {latest_version})", command=uprade_package)
+                else:
+                    upgrade_button.grid_forget()
+
+        except:
+            upgrade_button.grid_forget()
+    while True:
+        a=threading.Thread(target=check_package_upgradeable_thread,daemon=True)
+        a.start()
+        a.join()
+        time.sleep(0.5)
+
+
+
 if __name__ == "__main__":
     if datetime.datetime.now() >= datetime.datetime(2025, 4, 13):
         messagebox.showerror("Error", "This program cannot be opened after Apr. 13, 2025.")
@@ -819,7 +934,7 @@ if __name__ == "__main__":
     elif build>=9600 and build<=18363:
         messagebox.showwarning("Warning", "These versions are ending their support.")
     elif build<22000:
-        messagebox.showinfo("Advise","Upgrade to Windows 11 for a better experience.(Windows 11 supports sv_ttk Completely!)")
+        messagebox.showinfo("Advice","Upgrade to Windows 11 for a better experience.(Windows 11 supports sv_ttk Completely!)")
     root = tk.Tk()
     root.title("PyQuick")
     root.resizable(False, False)
@@ -925,6 +1040,10 @@ if __name__ == "__main__":
     uninstall_button = ttk.Button(pip_frame, text="Uninstall Package", command=uninstall_package)
     uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
 
+    upgrade_button=ttk.Button(pip_frame,text="Upgrade Package",command=uprade_package)
+    #upgrade_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
+    upgrade_button.grid_forget()
+
     pip_progress_bar=ttk.Progressbar(pip_frame, orient='horizontal', length=300, mode='indeterminate')
     #pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.grid_forget()
@@ -939,7 +1058,6 @@ if __name__ == "__main__":
         themes = ttk.Checkbutton(root, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
         themes.grid(row=1, column=0, pady=10, padx=10, sticky="w")
 
-    #启动预加载
     
     if build>22000:
         #messagebox.showerror("Error", "Windows 10 1809 or later is required to run this program.")
@@ -948,4 +1066,5 @@ if __name__ == "__main__":
     #show_name()
     threading.Thread(target=read_python_version, daemon=True).start()
     threading.Thread(target=check_python_installation, daemon=True).start()
+    threading.Thread(target=check_package_upgradeable, daemon=True).start()
     root.mainloop()
