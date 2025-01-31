@@ -34,14 +34,18 @@ PYTHON_MIRRORS=[
 ssl.create_default_context=ssl._create_unverified_context()
 # 禁用 SSL 警告
 urllib3.disable_warnings()
-
-
 # 获取当前工作目录
 MY_PATH = os.getcwd()
-if ".py"in os.path.basename(__file__):
-    version_pyquick="1954_code"
-else:
-    version_pyquick="1954"
+aa=os.path.join(MY_PATH,os.path.basename(__file__))
+bb=os.path.basename(__file__).split(".")[0]
+py="py"
+exe="exe"
+pyd="pyd"
+pyc="pyc"
+if (os.path.exists(os.path.join(MY_PATH,bb+py))) or (os.path.exists(os.path.join(MY_PATH,bb+pyd))) or (os.path.exists(os.path.join(MY_PATH,bb+pyc))):
+    version_pyquick="1957_code"
+elif (os.path.exists(os.path.join(MY_PATH,bb+exe))):
+    version_pyquick="1957"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -67,9 +71,28 @@ with open(os.path.join(config_path_base, "path.txt"),"r") as f:
             writable=False
             break
     if writable:
-        with open(os.path.join(config_path_base, "path.txt"), "a") as f:
-            f.write(os.path.join(MY_PATH,os.path.basename(__file__)))
-            f.write("\n")
+        
+        if os.path.exists(aa):
+            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
+                f.write(os.path.join(MY_PATH,os.path.basename(__file__)))
+                f.write("\n")
+        elif(os.path.exists(os.path.join(MY_PATH,bb+py))):
+            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
+                f.write(os.path.join(MY_PATH,bb+py))
+                f.write("\n")
+        elif(os.path.exists(os.path.join(MY_PATH,bb+exe))):
+            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
+                f.write(os.path.join(MY_PATH,bb+exe))
+                f.write("\n")
+        elif(os.path.exists(os.path.join(MY_PATH,bb+pyd))):
+            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
+                f.write(os.path.join(MY_PATH,bb+pyd))
+                f.write("\n")
+        elif(os.path.exists(os.path.join(MY_PATH,bb+pyc))):
+            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
+                f.write(os.path.join(MY_PATH,bb+pyc))
+                f.write("\n")
+        
 
 
 
@@ -78,10 +101,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1954\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1957\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1954\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1957\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -318,7 +341,7 @@ def download_file(selected_version, destination_path, num_threads):
     progress_bar.config(mode="indeterminate")
     progress_bar.start(10)
     cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
-    cancel_button.config(state="normal")
+    cancel_button.config(state="disabled")
     global file_size, executor, futures, downloaded_bytes, is_downloading, destination
     # 验证版本号是否有效
     if not validate_version(selected_version):
@@ -385,6 +408,7 @@ def download_file(selected_version, destination_path, num_threads):
         b.start()
         b.join()
     time.sleep(0.2)
+    cancel_button.config(state="normal")
     progress_bar.config(mode="determinate")
     progress_bar['value']=0
     progress_bar['maximum']=100
@@ -540,6 +564,7 @@ def check_pip_version():
     package_entry.config(state="disabled")
     install_button.config(state="disabled")
     uninstall_button.config(state="disabled")
+    upgrade_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
     clear()
@@ -551,6 +576,7 @@ def check_pip_version():
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
         install_button.config(state="normal")
+        upgrade_button.config(state="normal")
         uninstall_button.config(state="normal")
         root.after(5000, clear)
         return
@@ -563,6 +589,7 @@ def check_pip_version():
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
         install_button.config(state="normal")
+        upgrade_button.config(state="normal")
         uninstall_button.config(state="normal")
         root.after(5000, clear)
         return
@@ -576,6 +603,7 @@ def check_pip_version():
             package_status_label.config(text=f"pip has been updated! {current_version}-->{latest_version}")
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
+            upgrade_button.config(state="normal")
             install_button.config(state="normal")
             uninstall_button.config(state="normal")
             
@@ -587,6 +615,7 @@ def check_pip_version():
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             install_button.config(state="normal")
+            upgrade_button.config(state="normal")
             uninstall_button.config(state="normal")
             root.after(5000, clear)
     else:
@@ -596,6 +625,7 @@ def check_pip_version():
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
         install_button.config(state="normal")
+        upgrade_button.config(state="normal")
         uninstall_button.config(state="normal")
         root.after(5000, clear)
 
@@ -607,6 +637,7 @@ def upgrade_pip():
         package_entry.config(state="disabled")
         install_button.config(state="disabled")
         uninstall_button.config(state="disabled")
+        upgrade_button.config(state="disabled")
         pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
         pip_progress_bar.start(10)
         clear()
@@ -619,6 +650,7 @@ def upgrade_pip():
         package_status_label.config(text=f"Error: {str(e)}")
         pip_upgrade_button.config(state="normal")
         package_entry.config(state="normal")
+        upgrade_button.config(state="normal")
         install_button.config(state="normal")
         uninstall_button.config(state="normal")
         pip_progress_bar.stop()
@@ -630,13 +662,26 @@ def install_package():
     """安装指定的Python包"""
     
     package_name = package_entry.get()
+    
     clear()
     install_button.config(state="disabled")
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
     uninstall_button.config(state="disabled")
+    upgrade_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
+    if "=" in package_name or package_name=="" or package_name==None or " " in package_name:
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
+        package_status_label.config(text=f"Invalid package name: {package_name}")
+        uninstall_button.config(state="normal")
+        upgrade_button.config(state="normal")
+        pip_upgrade_button.config(state="normal")
+        package_entry.config(state="normal")
+        install_button.config(state="normal")
+        root.after(5000, clear)
+        return
     def install_package_thread():
         try:
             #PyQt5_sip12.16.1(14)
@@ -650,6 +695,7 @@ def install_package():
                 package_status_label.config(text=f"Package '{package_name}' is already installed.")
                 install_button.config(state="normal")
                 pip_upgrade_button.config(state="normal")
+                upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 uninstall_button.config(state="normal")
                 root.after(5000, clear)
@@ -663,6 +709,7 @@ def install_package():
                     package_status_label.config(text=f"Package '{package_name}' has been installed successfully!")
                     install_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
+                    upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")                    
                     root.after(5000, clear)
@@ -672,8 +719,19 @@ def install_package():
                     package_status_label.config(text=f"{package_name} is not found from the Internet.")
                     install_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
+                    upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")          
+                    root.after(5000, clear)
+                elif "Invalid requirement" in result.stderr:
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
+                    package_status_label.config(text=f"Invalid package name: {package_name}")
+                    uninstall_button.config(state="normal")
+                    upgrade_button.config(state="normal")
+                    pip_upgrade_button.config(state="normal")
+                    package_entry.config(state="normal")
+                    install_button.config(state="normal")
                     root.after(5000, clear)
                 else:
                     pip_progress_bar.stop()
@@ -681,6 +739,7 @@ def install_package():
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
                     install_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
+                    upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
                     root.after(5000, clear)
@@ -690,6 +749,7 @@ def install_package():
             package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
             install_button.config(state="normal")
             pip_upgrade_button.config(state="normal")
+            upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             uninstall_button.config(state="normal")
             root.after(5000, clear)
@@ -702,12 +762,23 @@ def uninstall_package():
     clear()
     package_name = package_entry.get()
     uninstall_button.config(state="disabled")
+    upgrade_button.config(state="disabled")
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
     install_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
-    
+    if "=" in package_name  or package_name=="" or package_name==None or " " in package_name:
+        pip_progress_bar.stop()
+        pip_progress_bar.grid_forget()
+        package_status_label.config(text=f"Invalid package name: {package_name}")
+        uninstall_button.config(state="normal")
+        upgrade_button.config(state="normal")
+        pip_upgrade_button.config(state="normal")
+        package_entry.config(state="normal")
+        install_button.config(state="normal")
+        root.after(5000, clear)
+        return
     def uninstall_package_thread():
         try:
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
@@ -716,12 +787,13 @@ def uninstall_package():
                 pip_progress_bar.stop()
                 pip_progress_bar.grid_forget()
                 package_status_label.config(text=f"Package '{package_name}' is not installed.")
+                upgrade_button.config(state="normal")
                 uninstall_button.config(state="normal")
                 pip_upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 install_button.config(state="normal")
                 root.after(5000, clear)
-                return 0
+                
             else:
                 result = subprocess.run(["python", "-m", "pip", "uninstall", "-y", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
@@ -731,16 +803,27 @@ def uninstall_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Package '{package_name}' has been uninstalled successfully!")
                     uninstall_button.config(state="normal")
+                    upgrade_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     root.after(5000, clear) 
-                
+                elif "Invalid requirement" in result.stderr:
+                    pip_progress_bar.stop()
+                    pip_progress_bar.grid_forget()
+                    package_status_label.config(text=f"Invalid package name: {package_name}")
+                    uninstall_button.config(state="normal")
+                    upgrade_button.config(state="normal")
+                    pip_upgrade_button.config(state="normal")
+                    package_entry.config(state="normal")
+                    install_button.config(state="normal")
+                    root.after(5000, clear)
                 else:
                     pip_progress_bar.stop()
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Error uninstalling package '{package_name}': {result.stderr}")
                     uninstall_button.config(state="normal")
+                    upgrade_button.config(state="normal")
                     pip_upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
@@ -751,6 +834,7 @@ def uninstall_package():
             pip_progress_bar.grid_forget()
             package_status_label.config(text=f"Error uninstalling package '{package_name}': {str(e)}")
             uninstall_button.config(state="normal")
+            upgrade_button.config(state="normal")
             pip_upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             install_button.config(state="normal")           
@@ -765,12 +849,12 @@ def uprade_package():
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
     install_button.config(state="disabled")
+
     uninstall_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
     
     def upgrade_package_thread():
-        
         try:
             find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
@@ -889,8 +973,10 @@ def load_theme():
 
 
 def check_package_upgradeable():
+    
     def check_package_upgradeable_thread():
         package_name = package_entry.get()
+        package_name1=package_name
         if package_name==None or package_name=="":
             upgrade_button.grid_forget()
             return 
@@ -907,20 +993,32 @@ def check_package_upgradeable():
                 latest_version=check_upgradeable.stdout.split("\n")[-2].split("-")[1]
                 
                 if f"Would install" in check_upgradeable.stdout:
-                    package_true_name=check_upgradeable.stdout.split("\n")[-2].split("-")[0].split(" ")[-1]
-                    upgrade_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
-                    upgrade_button.config(state="normal")
-                    upgrade_button.config(text=f"Upgrade Package: {package_true_name} ({current_version} -> {latest_version})", command=uprade_package)
+                    if current_version==latest_version:
+                        upgrade_button.grid_forget()
+                        return
+                    else:
+                        package_true_name=check_upgradeable.stdout.split("\n")[-2].split("-")[0].split(" ")[-1]
+                        upgrade_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
+                        upgrade_button.config(state="normal")
+                        upgrade_button.config(text=f"Upgrade Package: {package_true_name} ({current_version} -> {latest_version})", command=uprade_package)
+                        while True:
+                            package_name2=package_entry.get()
+                            if package_name1!=package_name2:
+                                upgrade_button.grid_forget()
+                                break
+                        return
                 else:
                     upgrade_button.grid_forget()
+                    return
 
         except:
             upgrade_button.grid_forget()
+            return
     while True:
         a=threading.Thread(target=check_package_upgradeable_thread,daemon=True)
         a.start()
         a.join()
-        time.sleep(0.5)
+        time.sleep(0.3)
 
 
 
@@ -934,7 +1032,7 @@ if __name__ == "__main__":
     elif build>=9600 and build<=18363:
         messagebox.showwarning("Warning", "These versions are ending their support.")
     elif build<22000:
-        messagebox.showinfo("Advice","Upgrade to Windows 11 for a better experience.(Windows 11 supports sv_ttk Completely!)")
+        messagebox.showinfo("Advice","Upgrade to Windows 11 for a better experience.(Windows 11 supports sv_ttk FULLY!)")
     root = tk.Tk()
     root.title("PyQuick")
     root.resizable(False, False)
@@ -1003,7 +1101,7 @@ if __name__ == "__main__":
     # 取消下载按钮
     cancel_button = ttk.Button(download_frame, text="Cancel Download", command=confirm_cancel_download)
     cancel_button.grid_forget()
-    #cancel_button.config(state="disabled")
+    
 
     # 下载进度
     progress_bar = ttk.Progressbar(download_frame, orient='horizontal', length=300, mode='determinate')
@@ -1041,11 +1139,9 @@ if __name__ == "__main__":
     uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
 
     upgrade_button=ttk.Button(pip_frame,text="Upgrade Package",command=uprade_package)
-    #upgrade_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
     upgrade_button.grid_forget()
 
     pip_progress_bar=ttk.Progressbar(pip_frame, orient='horizontal', length=300, mode='indeterminate')
-    #pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.grid_forget()
     pip_progress_bar['value']=0
 
@@ -1060,10 +1156,9 @@ if __name__ == "__main__":
 
     
     if build>22000:
-        #messagebox.showerror("Error", "Windows 10 1809 or later is required to run this program.")
+        
         load_theme()
     threading.Thread(target=show_name, daemon=True).start()
-    #show_name()
     threading.Thread(target=read_python_version, daemon=True).start()
     threading.Thread(target=check_python_installation, daemon=True).start()
     threading.Thread(target=check_package_upgradeable, daemon=True).start()
