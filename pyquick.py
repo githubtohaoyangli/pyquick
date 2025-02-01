@@ -543,9 +543,14 @@ def show_name():
                 mirror=mirrors[len(mirrors)-1].strip("\n")
             
         select_version=version_combobox.get()
+        ver1=select_version
         url=f"{mirror}/{select_version}/"
         __result=python_dowload_url_reload(url)
-        download_file_combobox.configure(values=__result)
+        ver2=version_combobox.get()
+        if ver1==ver2:
+            download_file_combobox.configure(values=__result)
+        else:
+            download_file_combobox.configure(values=[])
     while True:
         a=threading.Thread(target=show_name_thread, daemon=True)
         a.start()
