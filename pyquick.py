@@ -318,10 +318,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1985.1000\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1985.1002\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1985.1000\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1985.1002\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -1347,9 +1347,9 @@ def check_package_upgradeable():
     if version_pip=="":
         return None
     if "Pip3" in version_pip:
-        version="."+version_pip.strip("Pip3")
+        version="3."+version_pip.strip("Pip3")
     if "Pip2" in version_pip:
-        version="."+version_pip.strip("Pip2")
+        version="2."+version_pip.strip("Pip2")
     def check_package_upgradeable_thread():
         package_name = package_entry.get()
         package_name1=package_name
@@ -1357,9 +1357,9 @@ def check_package_upgradeable():
             upgrade_button.grid_forget()
             return 
         try:
-            find_packages=subprocess.run([f"pip3.{version}.exe", "show",package_name], text=True,capture_output=True,
+            find_packages=subprocess.run([f"pip{version}.exe", "show",package_name], text=True,capture_output=True,
                                                     creationflags=subprocess.CREATE_NO_WINDOW)
-            check_upgradeable=subprocess.run([f"pip3.{version}.exe", "install", "--upgrade", "--dry-run", package_name], text=True,capture_output=True, 
+            check_upgradeable=subprocess.run([f"pip{version}.exe", "install", "--upgrade", "--dry-run", package_name], text=True,capture_output=True, 
                                                     creationflags=subprocess.CREATE_NO_WINDOW)
             current_version=find_packages.stdout.split("\n")[1].split(": ")[1]
             if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
@@ -1374,7 +1374,7 @@ def check_package_upgradeable():
                         return
                     else:
                         package_true_name=check_upgradeable.stdout.split("\n")[-2].split("-")[0].split(" ")[-1]
-                        upgrade_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
+                        upgrade_button.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
                         upgrade_button.config(state="normal")
                         upgrade_button.config(text=f"Upgrade Package: {package_true_name} ({current_version} -> {latest_version})", command=uprade_package)
                         while True:
@@ -1382,6 +1382,7 @@ def check_package_upgradeable():
                             if package_name1!=package_name2:
                                 upgrade_button.grid_forget()
                                 break
+                            time.sleep(0.3)
                         return
                 else:
                     upgrade_button.grid_forget()
