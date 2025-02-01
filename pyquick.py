@@ -21,6 +21,7 @@ import urllib3
 import platform
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 def allow_thread():
     def thread():
         with open(os.path.join(config_path, "allowthread.txt"), "r") as r:
@@ -118,9 +119,9 @@ def settings():
                             if python_version[i]==aa:
                                 return i
                 else: 
-                    return 
+                    return 0
         else:
-            return
+            return 0
     
     
     w=tk.Toplevel(root)
@@ -173,6 +174,7 @@ def settings():
     python_version=get_python_version()
     select_python_version_combobox=ttk.Combobox(pip_se_frame,values=python_version,state="readonly")
     select_python_version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
+    
     select_python_version_combobox.current(read_py_ver())
 
     if build>22000:
@@ -248,16 +250,17 @@ elif (os.path.exists(os.path.join(MY_PATH,bb+exe))):
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
+if not os.path.exists(config_path):
+    os.makedirs(config_path)
 if not os.path.exists(os.path.join(config_path,"pythonmirror.txt")):
-    with open(os.path.join(config_path,"pythonmirror.txt"),"w") as f:
+    with open(os.path.join(config_path,"pythonmirror.txt"),"w+") as f:
         pass
 if not os.path.exists(os.path.join(config_path,"pipmirror.txt")):
-    with open(os.path.join(config_path,"pipmirror.txt"),"w") as f:
+    with open(os.path.join(config_path,"pipmirror.txt"),"w+") as f:
         pass
 
 # 如果保存目录不存在，则创建它
-if not os.path.exists(config_path):
-    os.makedirs(config_path)
+
 if not os.path.exists(os.path.join(config_path, "path.txt")):
     with open(os.path.join(config_path, "path.txt"), "a"):
         pass
@@ -315,10 +318,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1985\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1985.1000\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1985\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1985.1000\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -794,14 +797,19 @@ def get_python_version():
             all_versions.append(f"Pip{ver.strip("Python")}")
     return all_versions
 
-
+def retry_pip():
+    pip_retry_button.grid_forget()
+    threading.Thread(target=show_pip_version, daemon=True).start()
 
 def confirm_cancel_download():
     """确认取消下载"""
     if messagebox.askyesno("Confirm", "Are you sure you want to cancel the download?"):
         threading.Thread(target=cancel_download, daemon=True).start()
 def show_pip_version():
+    aw=1
     def thread():
+        global aw
+        aw=1
         try:
             pip_upgrade_button.config(text="Checking...",state="disabled")
            
@@ -811,15 +819,19 @@ def show_pip_version():
             latest_version=get_latest_pip_version()
             if version_pip==latest_version:
                 pip_upgrade_button.config(text=f"Pip is up to date({python_name}, Ver:{version_pip})",state="disabled")
+                aw=1
             else:
                 pip_upgrade_button.config(text=f"New version available({python_name}:{version_pip}-->{latest_version})",state="normal")
+                aw=0
         except Exception:
             pip_upgrade_button.config(text=f"Failed to get pip version",state="disabled")
+            pip_retry_button.grid(row=1, column=0, columnspan=3, pady=10, padx=10)
     while True:
-        a=threading.Thread(target=thread, daemon=True)
-        a.start()
-        a.join()
-        time.sleep(5)
+        if aw==1:
+            a=threading.Thread(target=thread, daemon=True)
+            a.start()
+            a.join()
+            time.sleep(30)
 
 def get_pip_version():
     """获取当前pip版本"""
@@ -832,12 +844,12 @@ def get_pip_version():
     if version_pip=="":
         return None
     if "Pip3" in version_pip:
-        version="."+version_pip.strip("Pip3")
+        version="3."+version_pip.strip("Pip3")
     if "Pip2" in version_pip:
-        version="."+version_pip.strip("Pip2")
+        version="2."+version_pip.strip("Pip2")
     
     try:
-        return subprocess.check_output([f'pip3{version}.exe', "--version"],
+        return subprocess.check_output([f'pip{version}.exe', "--version"],
                                        creationflags=subprocess.CREATE_NO_WINDOW).decode().strip().split()[1]
     except subprocess.CalledProcessError as e:
         print(f"Subprocess error: {e}")
@@ -861,7 +873,19 @@ def get_latest_pip_version():
 def update_pip():
     """更新pip到最新版本"""
     try:
-        subprocess.run(["python", "-m", "pip", "install", "--upgrade", "pip"],
+        with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
+            version_pip=f.readlines()[-1].strip("\n")
+    except:
+        version_pip=""
+    
+    if version_pip=="":
+        return None
+    if "Pip3" in version_pip:
+        version="3."+version_pip.strip("Pip3")
+    if "Pip2" in version_pip:
+        version="2."+version_pip.strip("Pip2")
+    try:
+        subprocess.run([f"pip{version}", "install", "--upgrade", "pip"],text=True,capture_output=True,
                        creationflags=subprocess.CREATE_NO_WINDOW)
         return True
     except subprocess.CalledProcessError as e:
@@ -870,7 +894,7 @@ def update_pip():
 
 
 def check_pip_version():
-    global select_python_version_combobox
+    
     """检查并更新pip版本"""
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
@@ -994,12 +1018,23 @@ def install_package():
         install_button.config(state="normal")
         root.after(5000, clear)
         return
+    try:
+        with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
+            version_pip=f.readlines()[-1].strip("\n")
+    except:
+        version_pip=""
+    if version_pip=="":
+        return None
+    if "Pip3" in version_pip:
+        version="3."+version_pip.strip("Pip3")
+    if "Pip2" in version_pip:
+        version="2."+version_pip.strip("Pip2")
     def install_package_thread():
         try:
             #PyQt5_sip12.16.1(14)
             
             
-            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+            find_packages=subprocess.run([f"pip{version}.exe", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"Name: {package_name}" in find_packages.stdout:
                 pip_progress_bar.stop()
@@ -1013,7 +1048,7 @@ def install_package():
                 root.after(5000, clear)
                 return
             else:
-                result = subprocess.run(["python", "-m", "pip", "install", package_name], capture_output=True,
+                result = subprocess.run([f"pip{version}.exe", "install", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 if "Successfully installed" in result.stdout:
                     pip_progress_bar.stop()
@@ -1091,9 +1126,21 @@ def uninstall_package():
         install_button.config(state="normal")
         root.after(5000, clear)
         return
+    try:
+        with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
+            version_pip=f.readlines()[-1].strip("\n")
+    except:
+        version_pip=""
+    
+    if version_pip=="":
+        return None
+    if "Pip3" in version_pip:
+        version="3."+version_pip.strip("Pip3")
+    if "Pip2" in version_pip:
+        version="2."+version_pip.strip("Pip2")
     def uninstall_package_thread():
         try:
-            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+            find_packages=subprocess.run([f"pip{version}.exe", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
                 pip_progress_bar.stop()
@@ -1107,7 +1154,7 @@ def uninstall_package():
                 root.after(5000, clear)
                 
             else:
-                result = subprocess.run(["python", "-m", "pip", "uninstall", "-y", package_name], capture_output=True,
+                result = subprocess.run([f"pip{version}.exe", "uninstall", "-y", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 
                 if "Successfully uninstalled" in result.stdout:
@@ -1165,10 +1212,21 @@ def uprade_package():
     uninstall_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
+    try:
+        with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
+            version_pip=f.readlines()[-1].strip("\n")
+    except:
+        version_pip=""
     
+    if version_pip=="":
+        return None
+    if "Pip3" in version_pip:
+        version="3."+version_pip.strip("Pip3")
+    if "Pip2" in version_pip:
+        version="2."+version_pip.strip("Pip2")
     def upgrade_package_thread():
         try:
-            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+            find_packages=subprocess.run([f"pip{version}.exe", "show",package_name], text=True,capture_output=True,
                                                         creationflags=subprocess.CREATE_NO_WINDOW)
             if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
                 pip_progress_bar.stop()
@@ -1182,7 +1240,7 @@ def uprade_package():
                 root.after(5000, clear)
                 return 0
             else:
-                result = subprocess.run(["python", "-m", "pip", "install", "--upgrade", package_name], capture_output=True,
+                result = subprocess.run([f"pip{version}.exe", "install", "--upgrade", package_name], capture_output=True,
                                         text=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 
                 if "Successfully installed" in result.stdout:
@@ -1275,7 +1333,18 @@ def load_theme():
 
 
 def check_package_upgradeable():
+    try:
+        with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
+            version_pip=f.readlines()[-1].strip("\n")
+    except:
+        version_pip=""
     
+    if version_pip=="":
+        return None
+    if "Pip3" in version_pip:
+        version="."+version_pip.strip("Pip3")
+    if "Pip2" in version_pip:
+        version="."+version_pip.strip("Pip2")
     def check_package_upgradeable_thread():
         package_name = package_entry.get()
         package_name1=package_name
@@ -1283,9 +1352,9 @@ def check_package_upgradeable():
             upgrade_button.grid_forget()
             return 
         try:
-            find_packages=subprocess.run(["python", "-m", "pip", "show",package_name], text=True,capture_output=True,
+            find_packages=subprocess.run([f"pip3.{version}.exe", "show",package_name], text=True,capture_output=True,
                                                     creationflags=subprocess.CREATE_NO_WINDOW)
-            check_upgradeable=subprocess.run(["python", "-m", "pip", "install", "--upgrade", "--dry-run", package_name], text=True,capture_output=True, 
+            check_upgradeable=subprocess.run([f"pip3.{version}.exe", "install", "--upgrade", "--dry-run", package_name], text=True,capture_output=True, 
                                                     creationflags=subprocess.CREATE_NO_WINDOW)
             current_version=find_packages.stdout.split("\n")[1].split(": ")[1]
             if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
@@ -1320,7 +1389,7 @@ def check_package_upgradeable():
         a=threading.Thread(target=check_package_upgradeable_thread,daemon=True)
         a.start()
         a.join()
-        time.sleep(0.3)
+        time.sleep(0.5)
 
 
 
@@ -1435,21 +1504,26 @@ if __name__ == "__main__":
     pip_upgrade_button = ttk.Button(pip_frame, text="Pip Version:", command=upgrade_pip)
     pip_upgrade_button.grid(row=0, column=0, columnspan=3, pady=10, padx=10)
 
+    pip_retry_button = ttk.Button(pip_frame, text="Retry", command=retry_pip)
+    #pip_retry_button.grid(row=1, column=0, columnspan=3, pady=10, padx=10)
+    pip_retry_button.grid_forget()
+
+
 
     package_label = ttk.Label(pip_frame, text="Enter Package Name:")
-    package_label.grid(row=1, column=0, pady=10, padx=10, sticky="e")
+    package_label.grid(row=2, column=0, pady=10, padx=10, sticky="e")
 
 
     package_entry = ttk.Entry(pip_frame, width=80)
-    package_entry.grid(row=1, column=1, pady=10, padx=10, sticky="w")
+    package_entry.grid(row=2, column=1, pady=10, padx=10, sticky="w")
 
 
     install_button = ttk.Button(pip_frame, text="Install Package", command=install_package)
-    install_button.grid(row=2, column=0, columnspan=3, pady=10, padx=10)
+    install_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
 
 
     uninstall_button = ttk.Button(pip_frame, text="Uninstall Package", command=uninstall_package)
-    uninstall_button.grid(row=3, column=0, columnspan=3, pady=10, padx=10)
+    uninstall_button.grid(row=4, column=0, columnspan=3, pady=10, padx=10)
 
     upgrade_button=ttk.Button(pip_frame,text="Upgrade Package",command=uprade_package)
     upgrade_button.grid_forget()
@@ -1460,7 +1534,7 @@ if __name__ == "__main__":
 
 
     package_status_label = ttk.Label(pip_frame, text="", padding="5")
-    package_status_label.grid(row=6, column=0, columnspan=3, pady=10, padx=10)
+    package_status_label.grid(row=7, column=0, columnspan=3, pady=10, padx=10)
     
     
 
