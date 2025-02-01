@@ -36,7 +36,7 @@ def allow_thread():
         time.sleep(0.3)
 
 def settings():
-    global select_python_version_combobox, python_download_mirror, allow_thread_combobox, switch, themes, python_version
+    #global select_python_version_combobox, python_download_mirror, allow_thread_combobox, switch, themes, python_version
     import sv_ttk
     def switch_theme():
         """切换主题"""
@@ -70,11 +70,13 @@ def settings():
                         b.write(python_download_mirror.get())
                         b.write("\n")
                 with open(os.path.join(config_path, "allowthread.txt"), "a") as c:
-                    c.write(allow_thread_combobox.get())
-                    c.write("\n")
+                    if allow_thread_combobox.get()!="" or allow_thread_combobox.get()!=None:
+                        c.write(allow_thread_combobox.get())
+                        c.write("\n")
                 with open(os.path.join(config_path, "pythonversion.txt"), "a") as d:
-                    d.write(select_python_version_combobox.get())
-                    d.write("\n")
+                    if (select_python_version_combobox.get()!="" or select_python_version_combobox.get()!=None) and "Pip" in select_python_version_combobox.get():
+                        d.write(select_python_version_combobox.get())
+                        d.write("\n")
             except:
                 pass
         while True:
@@ -108,15 +110,19 @@ def settings():
     def read_py_ver():
         if os.path.exists(os.path.join(config_path, "pythonversion.txt")):
             with open(os.path.join(config_path, "pythonversion.txt"), "r") as r:
-                aa=r.readlines()[-1].strip("\n")
-                if aa in python_version:
-                    for i in range(len(python_version)):
-                        if python_version[i]==aa:
-                            return i
+                a=r.readlines()
+                if len(a)>=1:
+                    aa=a[len(a)-1].strip("\n")
+                    if aa in python_version:
+                        for i in range(len(python_version)):
+                            if python_version[i]==aa:
+                                return i
                 else: 
                     return 
         else:
             return
+    
+    
     w=tk.Toplevel(root)
     w.title("Settings")
     w.resizable(False, False)
@@ -153,6 +159,13 @@ def settings():
     allow_thread_combobox=ttk.Combobox(python_downlod_frame,values=["True","False"],state="readonly")
     allow_thread_combobox.grid(row=1, column=1, pady=10, padx=10, sticky="w")
     allow_thread_combobox.current(read_allowthread())
+    def open_close():
+        def thread():
+            if is_downloading:
+                allow_thread_combobox.config(state="disabled")
+        while True:
+            threading.Thread(target=thread, daemon=True).start()
+            time.sleep(0.5)
 
     select_python_version_label = ttk.Label(pip_se_frame, text="Select Python Version:")
     select_python_version_label.grid(row=0, column=0, pady=10, padx=10, sticky="e")
@@ -164,7 +177,8 @@ def settings():
 
     if build>22000:
         load_theme()
-    threading .Thread(target=save_settings, daemon=True).start()
+    threading.Thread(target=save_settings, daemon=True).start()
+    threading.Thread(target=open_close, daemon=True).start()
     w.mainloop()
 
 
@@ -213,8 +227,8 @@ def get_system_build():
 build=get_system_build()
 #print(build)查看系统build版本是否达标，如果不是Windows11(build>=22000)则无sv_ttk使用权，只能使用ttk 
 PYTHON_MIRRORS=[
-    "python.org",
-    "mirrors.huaweicloud.com"
+    "https://python.org/ftp/python",
+    "https://mirrors.huaweicloud.com/python"
 ]
 ssl.create_default_context=ssl._create_unverified_context()
 # 禁用 SSL 警告
@@ -228,9 +242,9 @@ exe="exe"
 pyd="pyd"
 pyc="pyc"
 if (os.path.exists(os.path.join(MY_PATH,bb+"."+py))) or (os.path.exists(os.path.join(MY_PATH,bb+"."+pyd))) or (os.path.exists(os.path.join(MY_PATH,bb+"."+pyc))):
-    version_pyquick="1957_code"
+    version_pyquick="1985_code"
 elif (os.path.exists(os.path.join(MY_PATH,bb+exe))):
-    version_pyquick="1957"
+    version_pyquick="1985"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -250,6 +264,7 @@ if not os.path.exists(os.path.join(config_path, "path.txt")):
 if not os.path.exists(os.path.join(config_path, "allowthread.txt")):
     with open(os.path.join(config_path, "allowthread.txt"), "a")as fw:
         fw.write("False")
+        fw.write("\n") 
 if not os.path.exists(os.path.join(config_path, "pipmirror.txt")):
     pipmirror=subprocess.run(["pip","config","get","global.index-url"],capture_output=True,text=True,creationflags=subprocess.CREATE_NO_WINDOW)
     with open(os.path.join(config_path, "pipmirror.txt"), "a")as fw:
@@ -300,10 +315,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1957.1000\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 1985\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1957.1000\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1985\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -376,27 +391,27 @@ def python_dowload_url_reload(url):
     懒得改了
     """
     try:
-        r1=r'amd64[a-z]\d+/'
-        r3=r'win32[a-z]\d+/'
-        r2=r'arm64[a-z]\d+/'
-        r4=r'amd64/'
-        r5=r'win32/'
-        r6=r'arm64/'
-        r7=r'amd64[a-z][a-z]\d+/'
-        r8=r'win32[a-z][a-z]\d+/'
-        r9=r'arm64[a-z][a-z]\d+/'
-        r10=r'[a-z]+/'#最有用
         r11=r'\S+/'
-        if url!= "https://www.python.org/ftp/python/":
+        r1=r'INDEX'
+        r10=r'README'
+        r2=r'README.html'
+        with open(os.path.join(config_path,"pythonmirror.txt"),"r") as f:
+            mirrors=f.readlines()
+            if mirrors==[] or len(mirrors)<1:
+                mirror="https://www.python.org/ftp/python"
+            elif len(mirrors)>1:
+                mirror=mirrors[len(mirrors)-1].strip("\n")
+        select_version=version_combobox.get()
+        if (url==f"{mirror}/{select_version}/") and (select_version!="" or select_version!=None):
             with requests.get(url,verify=False) as r:
                 bs = BeautifulSoup(r.content, "lxml")
+               
                 results = []
                 for i in bs.find_all("a"):
-                    if (i.text != "../" )and(i.text!="previous/")and(re.match(r11,i.text)==None) and(re.match(r10,i.text)==None)and(i.text!="rpms/")and (re.match(r1,i.text)==None)  and (re.match(r2,i.text)==None) and (re.match(r3,i.text)==None)  and (re.match(r4,i.text)==None) and (re.match(r5,i.text)==None)and (re.match(r6,i.text)==None) and ("macos"not in i.text) and (re.match(r7,i.text)==None)  and (re.match(r8,i.text)==None) and (re.match(r9,i.text)==None) and ("mac" not in i.text) and ("Mac" not in i.text) and ("MacOS" not in i.text):
+                    if re.match(r11, i.text)==None and re.match(r1, i.text)==None and re.match(r10, i.text)==None and re.match(r2, i.text)==None:
                         results.append(i.text)
                 if results:
-                    if results:
-                        return results
+                    return results
     except Exception as e:
         logging.error(f"Python filename Reload Wrong:{e}")
 
@@ -405,7 +420,13 @@ def python_version_reload():
     def python_version_reload_thread():
         version_reload_button.configure(state="disabled", text="Reloading...")
         root.update()
-        url="https://www.python.org/ftp/python/"
+        with open(os.path.join(config_path,"pythonmirror.txt"),"r") as f:
+            mirrors=f.readlines()
+            if mirrors==[] or len(mirrors)<1:
+                mirror="https://www.python.org/ftp/python"
+            elif len(mirrors)>1:
+                mirror=mirrors[len(mirrors)-1].strip("\n")
+        url=f"{mirror}/"
         try:
             
             with requests.get(url,verify=False) as r:
@@ -475,6 +496,7 @@ def download_chunk(url, start_byte, end_byte, destination, retries=3):
     :param retries: 最大重试次数,默认为3次
     :return: 如果下载成功返回True,否则返回False
     """
+   
     global is_downloading
     # 构造请求头，指定下载的字节范围
     headers = {'Range': f'bytes={start_byte}-{end_byte}'}
@@ -510,8 +532,15 @@ def download_chunk(url, start_byte, end_byte, destination, retries=3):
     return False
 def show_name():
     def show_name_thread():
+        with open(os.path.join(config_path,"pythonmirror.txt"),"r") as f:
+            mirrors=f.readlines()
+            if mirrors==[] or len(mirrors)<1:
+                mirror="https://www.python.org/ftp/python"
+            elif len(mirrors)>1:
+                mirror=mirrors[len(mirrors)-1].strip("\n")
+            
         select_version=version_combobox.get()
-        url=f"https://www.python.org/ftp/python/{select_version}"
+        url=f"{mirror}/{select_version}/"
         __result=python_dowload_url_reload(url)
         download_file_combobox.configure(values=__result)
     while True:
@@ -548,7 +577,6 @@ def download_file(selected_version, destination_path, num_threads):
     progress_bar.start(10)
     cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
     cancel_button.config(state="disabled")
-    
     global file_size, executor, futures, downloaded_bytes, is_downloading, destination
     # 验证版本号是否有效
     if not validate_version(selected_version):
@@ -574,9 +602,15 @@ def download_file(selected_version, destination_path, num_threads):
             status_label.config(text=f"Failed to remove existing file: {str(e)}")
             return_normal()
             return
-
-    # 构造下载URL
-    url = f"https://www.python.org/ftp/python/{selected_version}/{file_name}"
+    with open(os.path.join(config_path,"pythonmirror.txt"),"r") as f:
+        mirrors=f.readlines()
+        if mirrors==[] or len(mirrors)<1:
+            mirror="https://www.python.org/ftp/python"
+        elif len(mirrors)>1:
+            mirror=mirrors[len(mirrors)-1].strip("\n")
+        
+    #url = f"{mirror}{selected_version}/{file_name}"
+    url = f"{mirror}/{selected_version}/{file_name}"
 
     # 获取文件大小
     try:
@@ -602,8 +636,14 @@ def download_file(selected_version, destination_path, num_threads):
     futures = []
     downloaded_bytes = [0]
     is_downloading = True
+    with open(os.path.join(config_path,"allowthread.txt"),"r") as f:
+        allowthread=f.readlines()[-1].strip("\n")
+        if allowthread=="False":
+            max_worker=1
+        else:
+            max_worker=num_threads
     # 使用线程池执行下载任务
-    executor = ThreadPoolExecutor(max_workers=num_threads)
+    executor = ThreadPoolExecutor(max_workers=max_worker)
     for i in range(num_threads):
         start_byte = i * chunk_size
         end_byte = start_byte + chunk_size - 1 if i != num_threads - 1 else file_size - 1
@@ -730,8 +770,10 @@ def download_selected_version():
     
     download_file_combobox.config(state="disabled")
     version_reload_button.config(state="disabled")
+    #allow_thread_combobox.config(state="disabled")
     cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
     cancel_button.config(state="normal")
+
     clear()
     root.protocol("WM_DELETE_WINDOW", on_closing)
     threading.Thread(target=download_file, args=(selected_version, destination_path, num_threads), daemon=True).start()
@@ -758,13 +800,32 @@ def confirm_cancel_download():
     """确认取消下载"""
     if messagebox.askyesno("Confirm", "Are you sure you want to cancel the download?"):
         threading.Thread(target=cancel_download, daemon=True).start()
-
+def show_pip_version():
+    def thread():
+        try:
+            pip_upgrade_button.config(text="Checking...",state="disabled")
+           
+            with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
+                python_name=f"Python{f.readlines()[-1].strip("\n").strip("Pip")}"
+            version_pip=get_pip_version()
+            latest_version=get_latest_pip_version()
+            if version_pip==latest_version:
+                pip_upgrade_button.config(text=f"Pip is up to date({python_name}, Ver:{version_pip})",state="disabled")
+            else:
+                pip_upgrade_button.config(text=f"New version available({python_name}:{version_pip}-->{latest_version})",state="normal")
+        except Exception:
+            pip_upgrade_button.config(text=f"Failed to get pip version",state="disabled")
+    while True:
+        a=threading.Thread(target=thread, daemon=True)
+        a.start()
+        a.join()
+        time.sleep(5)
 
 def get_pip_version():
     """获取当前pip版本"""
     try:
         with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
-            version_pip=f.read()
+            version_pip=f.readlines()[-1].strip("\n")
     except:
         version_pip=""
     
@@ -824,7 +885,7 @@ def check_pip_version():
         pip_progress_bar.stop()
         pip_progress_bar.grid_forget()
         package_status_label.config(text="Error: Failed to get current pip version")
-        pip_upgrade_button.config(state="normal")
+        
         package_entry.config(state="normal")
         install_button.config(state="normal")
         upgrade_button.config(state="normal")
@@ -837,7 +898,7 @@ def check_pip_version():
         pip_progress_bar.stop()
         pip_progress_bar.grid_forget()
         package_status_label.config(text="Error: Failed to get latest pip version")
-        pip_upgrade_button.config(state="normal")
+       
         package_entry.config(state="normal")
         install_button.config(state="normal")
         upgrade_button.config(state="normal")
@@ -852,7 +913,7 @@ def check_pip_version():
             pip_progress_bar.stop()
             pip_progress_bar.grid_forget()
             package_status_label.config(text=f"pip has been updated! {current_version}-->{latest_version}")
-            pip_upgrade_button.config(state="normal")
+            
             package_entry.config(state="normal")
             upgrade_button.config(state="normal")
             install_button.config(state="normal")
@@ -863,7 +924,7 @@ def check_pip_version():
             pip_progress_bar.stop()
             pip_progress_bar.grid_forget()
             package_status_label.config(text="Error: Failed to update pip")
-            pip_upgrade_button.config(state="normal")
+            
             package_entry.config(state="normal")
             install_button.config(state="normal")
             upgrade_button.config(state="normal")
@@ -873,7 +934,7 @@ def check_pip_version():
         pip_progress_bar.stop()
         pip_progress_bar.grid_forget()
         package_status_label.config(text=f"pip is up to date: {current_version}")
-        pip_upgrade_button.config(state="normal")
+        
         package_entry.config(state="normal")
         install_button.config(state="normal")
         upgrade_button.config(state="normal")
@@ -899,7 +960,7 @@ def upgrade_pip():
         root.after(5000, clear)
     except Exception as e:
         package_status_label.config(text=f"Error: {str(e)}")
-        pip_upgrade_button.config(state="normal")
+       
         package_entry.config(state="normal")
         upgrade_button.config(state="normal")
         install_button.config(state="normal")
@@ -928,7 +989,7 @@ def install_package():
         package_status_label.config(text=f"Invalid package name: {package_name}")
         uninstall_button.config(state="normal")
         upgrade_button.config(state="normal")
-        pip_upgrade_button.config(state="normal")
+        
         package_entry.config(state="normal")
         install_button.config(state="normal")
         root.after(5000, clear)
@@ -945,7 +1006,7 @@ def install_package():
                 pip_progress_bar.grid_forget()
                 package_status_label.config(text=f"Package '{package_name}' is already installed.")
                 install_button.config(state="normal")
-                pip_upgrade_button.config(state="normal")
+                
                 upgrade_button.config(state="normal")
                 package_entry.config(state="normal")
                 uninstall_button.config(state="normal")
@@ -959,7 +1020,7 @@ def install_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Package '{package_name}' has been installed successfully!")
                     install_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")                    
@@ -969,7 +1030,7 @@ def install_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"{package_name} is not found from the Internet.")
                     install_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")          
@@ -980,7 +1041,7 @@ def install_package():
                     package_status_label.config(text=f"Invalid package name: {package_name}")
                     uninstall_button.config(state="normal")
                     upgrade_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     root.after(5000, clear)
@@ -989,7 +1050,7 @@ def install_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Error installing package '{package_name}': {result.stderr}")
                     install_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     upgrade_button.config(state="normal")
                     package_entry.config(state="normal")
                     uninstall_button.config(state="normal")
@@ -999,7 +1060,7 @@ def install_package():
             pip_progress_bar.grid_forget()
             package_status_label.config(text=f"Error installing package '{package_name}': {str(e)}")
             install_button.config(state="normal")
-            pip_upgrade_button.config(state="normal")
+            
             upgrade_button.config(state="normal")
             package_entry.config(state="normal")
             uninstall_button.config(state="normal")
@@ -1025,7 +1086,7 @@ def uninstall_package():
         package_status_label.config(text=f"Invalid package name: {package_name}")
         uninstall_button.config(state="normal")
         upgrade_button.config(state="normal")
-        pip_upgrade_button.config(state="normal")
+        
         package_entry.config(state="normal")
         install_button.config(state="normal")
         root.after(5000, clear)
@@ -1040,7 +1101,7 @@ def uninstall_package():
                 package_status_label.config(text=f"Package '{package_name}' is not installed.")
                 upgrade_button.config(state="normal")
                 uninstall_button.config(state="normal")
-                pip_upgrade_button.config(state="normal")
+                
                 package_entry.config(state="normal")
                 install_button.config(state="normal")
                 root.after(5000, clear)
@@ -1055,7 +1116,7 @@ def uninstall_package():
                     package_status_label.config(text=f"Package '{package_name}' has been uninstalled successfully!")
                     uninstall_button.config(state="normal")
                     upgrade_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     root.after(5000, clear) 
@@ -1065,7 +1126,7 @@ def uninstall_package():
                     package_status_label.config(text=f"Invalid package name: {package_name}")
                     uninstall_button.config(state="normal")
                     upgrade_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     root.after(5000, clear)
@@ -1075,7 +1136,7 @@ def uninstall_package():
                     package_status_label.config(text=f"Error uninstalling package '{package_name}': {result.stderr}")
                     uninstall_button.config(state="normal")
                     upgrade_button.config(state="normal")
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     root.after(5000, clear)
@@ -1086,7 +1147,7 @@ def uninstall_package():
             package_status_label.config(text=f"Error uninstalling package '{package_name}': {str(e)}")
             uninstall_button.config(state="normal")
             upgrade_button.config(state="normal")
-            pip_upgrade_button.config(state="normal")
+            
             package_entry.config(state="normal")
             install_button.config(state="normal")           
             root.after(5000, clear)
@@ -1114,7 +1175,7 @@ def uprade_package():
                 pip_progress_bar.grid_forget()
                 package_status_label.config(text=f"Package '{package_name}' is not installed.")
                 upgrade_button.grid_forget()
-                pip_upgrade_button.config(state="normal")
+               
                 package_entry.config(state="normal")
                 install_button.config(state="normal")
                 uninstall_button.config(state="normal")
@@ -1130,7 +1191,7 @@ def uprade_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Package '{package_name}' has been upgraded successfully!")
                     upgrade_button.grid_forget()
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     uninstall_button.config(state="normal")
@@ -1141,7 +1202,7 @@ def uprade_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Package '{package_name}' is already up to date.")
                     upgrade_button.grid_forget()
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     uninstall_button.config(state="normal")
@@ -1152,7 +1213,7 @@ def uprade_package():
                     pip_progress_bar.grid_forget()
                     package_status_label.config(text=f"Error upgrading package '{package_name}': {result.stderr}")
                     upgrade_button.grid_forget()
-                    pip_upgrade_button.config(state="normal")
+                    
                     package_entry.config(state="normal")
                     install_button.config(state="normal")
                     uninstall_button.config(state="normal")
@@ -1164,7 +1225,7 @@ def uprade_package():
             pip_progress_bar.grid_forget()
             package_status_label.config(text=f"Error upgrading package '{package_name}': {str(e)}")
             upgrade_button.grid_forget()
-            pip_upgrade_button.config(state="normal")
+            
             package_entry.config(state="normal")
             install_button.config(state="normal") 
             uninstall_button.config(state="normal")  
@@ -1411,4 +1472,5 @@ if __name__ == "__main__":
     threading.Thread(target=check_python_installation, daemon=True).start()
     threading.Thread(target=check_package_upgradeable, daemon=True).start()
     threading.Thread(target=allow_thread, daemon=True).start()
+    threading.Thread(target=show_pip_version, daemon=True).start()
     root.mainloop()
