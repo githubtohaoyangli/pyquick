@@ -1012,7 +1012,7 @@ def install_package():
     upgrade_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
-    if "=" in package_name or package_name=="" or package_name==None or " " in package_name:
+    if "=" in package_name or package_name=="" or package_name==None or " " in package_name or package_name=="pip":
         pip_progress_bar.stop()
         pip_progress_bar.grid_forget()
         package_status_label.config(text=f"Invalid package name: {package_name}")
@@ -1120,7 +1120,7 @@ def uninstall_package():
     install_button.config(state="disabled")
     pip_progress_bar.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
     pip_progress_bar.start(10)
-    if "=" in package_name  or package_name=="" or package_name==None or " " in package_name:
+    if "=" in package_name  or package_name=="" or package_name==None or " " in package_name or package_name=="pip":
         pip_progress_bar.stop()
         pip_progress_bar.grid_forget()
         package_status_label.config(text=f"Invalid package name: {package_name}")
