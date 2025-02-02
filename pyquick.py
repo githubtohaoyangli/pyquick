@@ -59,152 +59,7 @@ def allow_thread():
         threading.Thread(target=thread, daemon=True).start()
         time.sleep(0.3)
 
-def settings():
-    #global select_python_version_combobox, python_download_mirror, allow_thread_combobox, switch, themes, python_version
-    import sv_ttk
-    def switch_theme():
-        """切换主题"""
-        if build>22000:
-            if switch.get():
-                sv_ttk.set_theme("dark")
-                save_theme("dark")
-            else:
-                sv_ttk.set_theme("light")
-                save_theme("light")
 
-    def load_theme():
-        """加载主题设置"""
-        if build>22000:
-            try:
-                with open(os.path.join(config_path, "theme.txt"), "r") as r:
-                    theme = r.read()
-                if theme == "dark":
-                    switch.set(True)
-                    sv_ttk.set_theme("dark")
-                elif theme == "light":
-                    switch.set(False)
-                    sv_ttk.set_theme("light")
-            except:
-                sv_ttk.set_theme("light")
-    def save_settings():
-        def save_thread():
-            try:
-                with open(os.path.join(config_path, "pythonmirror.txt"), "a") as b:
-                    if python_download_mirror.get()!="" or python_download_mirror.get()!=None:
-                        b.write(python_download_mirror.get())
-                        b.write("\n")
-                with open(os.path.join(config_path, "allowthread.txt"), "a") as c:
-                    if allow_thread_combobox.get()!="" or allow_thread_combobox.get()!=None:
-                        c.write(allow_thread_combobox.get())
-                        c.write("\n")
-                with open(os.path.join(config_path, "pythonversion.txt"), "a") as d:
-                    if (select_python_version_combobox.get()!="" or select_python_version_combobox.get()!=None) and "Pip" in select_python_version_combobox.get():
-                        d.write(select_python_version_combobox.get())
-                        d.write("\n")
-            except:
-                pass
-        while True:
-            a=threading.Thread(target=save_thread,daemon=True)
-            a.start()
-            a.join()
-            time.sleep(0.2)
-    def read_pythonmirror():
-        if os.path.exists(os.path.join(config_path, "pythonmirror.txt")):
-            with open(os.path.join(config_path, "pythonmirror.txt"), "r") as r:
-                aa=r.readlines()
-                if len(aa)>0:
-                    b=aa[len(aa)-1].strip("\n")
-                    for i in range(len(PYTHON_MIRRORS)):
-                        if b==PYTHON_MIRRORS[i]:
-                            return i
-                else:
-                    return 0
-        else:
-            return 0
-    def read_allowthread():
-        if os.path.exists(os.path.join(config_path, "allowthread.txt")):
-            with open(os.path.join(config_path, "allowthread.txt"), "r") as r:
-                aa=r.readlines()[-1].strip("\n")
-                if aa=="True":
-                    return 0
-                else:
-                    return 1
-        else:
-            return 1
-    def read_py_ver():
-        if os.path.exists(os.path.join(config_path, "pythonversion.txt")):
-            with open(os.path.join(config_path, "pythonversion.txt"), "r") as r:
-                a=r.readlines()
-                if len(a)>=1:
-                    aa=a[len(a)-1].strip("\n")
-                    if aa in python_version:
-                        for i in range(len(python_version)):
-                            if python_version[i]==aa:
-                                return i
-                else: 
-                    return 0
-        else:
-            return 0
-    
-    
-    w=tk.Toplevel(root)
-    w.title("Settings")
-    w.resizable(False, False)
-    icon_path = os.path.join(MY_PATH, 'pyquick.ico')
-    if os.path.exists(icon_path):
-        w.iconbitmap(icon_path)
-    tab_base=ttk.Notebook(w)
-
-    theme_frame = ttk.Frame(tab_base, padding="10")
-    python_downlod_frame = ttk.Frame(tab_base, padding="10")
-    pip_se_frame = ttk.Frame(tab_base, padding="10")
-    tab_base.add(theme_frame, text="Switch Theme")
-    tab_base.add(python_downlod_frame, text="Python Download Settings")
-    tab_base.add(pip_se_frame, text="Pip Settings")
-    tab_base.grid(padx=10, pady=10, row=0, column=0)
-
-    if build>22000:
-        switch = tk.BooleanVar()
-        themes = ttk.Checkbutton(theme_frame, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
-        themes.grid(row=0, column=0, pady=10, padx=10, sticky="w")
-    if build<22000:
-        warnings=ttk.Label(theme_frame,text="Unless you upgrade to Windows 11(21H2 or later), you can not switch your theme.",foreground="red")
-        warnings.grid(row=0, column=0, pady=10, padx=10, sticky="w")
-    python_download_key_label = ttk.Label(python_downlod_frame, text="Choose Python Download Mirror:")
-    python_download_key_label.grid(row=0, column=0, pady=10, padx=10, sticky="e")
-
-    python_download_mirror=ttk.Combobox(python_downlod_frame,values=PYTHON_MIRRORS)
-    python_download_mirror.grid(row=0, column=1, pady=10, padx=10, sticky="w")
-    python_download_mirror.current(read_pythonmirror())
-
-    allow_thread_label=ttk.Label(python_downlod_frame,text="Allow Threads During Download:")
-    allow_thread_label.grid(row=1, column=0, pady=10, padx=10, sticky="e")
-
-    allow_thread_combobox=ttk.Combobox(python_downlod_frame,values=["True","False"],state="readonly")
-    allow_thread_combobox.grid(row=1, column=1, pady=10, padx=10, sticky="w")
-    allow_thread_combobox.current(read_allowthread())
-    def open_close():
-        def thread():
-            if is_downloading:
-                allow_thread_combobox.config(state="disabled")
-        while True:
-            threading.Thread(target=thread, daemon=True).start()
-            time.sleep(0.5)
-
-    select_python_version_label = ttk.Label(pip_se_frame, text="Select Python Version:")
-    select_python_version_label.grid(row=0, column=0, pady=10, padx=10, sticky="e")
-
-    python_version=get_python_version()
-    select_python_version_combobox=ttk.Combobox(pip_se_frame,values=python_version,state="readonly")
-    select_python_version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
-    
-    select_python_version_combobox.current(read_py_ver())
-
-    if build>22000:
-        load_theme()
-    threading.Thread(target=save_settings, daemon=True).start()
-    threading.Thread(target=open_close, daemon=True).start()
-    w.mainloop()
 
 
 def on_closing():
@@ -737,8 +592,7 @@ def update_progress():
         
         progress1=progress_bar['value']
         # 计算并更新下载进度的百分比
-        print(url)
-        print(file_size)
+        
         progress = int(downloaded_bytes[0] / file_size) * 100
         
         # 将已下载字节数转换为MB
@@ -857,13 +711,7 @@ def get_python_version():
         if re.match(name,ver):
             all_versions.append(f"Pip{ver.strip("Python")}")
     return all_versions
-def write_python_version():
-    version=get_python_version()
-    with open(os.path.join(config_path,"pythonversion.txt"),"w") as f:
-        for i in version:
-            f.write(i)
-            f.write("\n")
-threading.Thread(target=write_python_version,daemon=True).start()
+
 def retry_pip():
     pip_retry_button.grid_forget()
     threading.Thread(target=show_pip_version, daemon=True).start()
@@ -882,7 +730,9 @@ def show_pip_version():
         try:
             pip_upgrade_button.config(text="Checking...",state="disabled")
             with open(os.path.join(config_path,"pythonversion.txt"),"r") as f:
-                python_name="Python"+f.readlines()[-1].strip("\n").strip("Pip")
+                b=f.readlines()
+                
+                python_name="Python"+b[-1].strip("\n").strip("Pip")
             
             latest_version=get_latest_pip_version()
             if version_pip==latest_version:
@@ -940,7 +790,8 @@ def get_pip_version():
     """获取当前pip版本"""
     try:
         with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
-            version_pip=f.readlines()[-1].strip("\n")
+            aa=f.readlines()
+            version_pip=aa[-1].strip("\n")
     except:
         version_pip=""
     
@@ -961,10 +812,10 @@ def get_pip_version():
         print(f"Subprocess error: {e}")
         return None
     except FileNotFoundError as a:
-        print(a)
+        
         return None
     except Exception as b:
-        print(b)
+        
         return None
     
 
@@ -997,7 +848,6 @@ def update_pip():
         if version_python in i:
             path=i
             break
-    print(path)
     path=path.strip("\n")
     try:
         subprocess.run(f'"{path.strip("\n")}" -m pip install --upgrade pip',text=True,shell=True,capture_output=True,
@@ -1334,7 +1184,7 @@ def uprade_package():
     clear()
     
     package_name = package_entry.get()
-    upgrade_button.config(state="disabled")
+    upgrade_button.grid_forget()
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
     install_button.config(state="disabled")
@@ -1532,6 +1382,166 @@ def check_package_upgradeable():
         a.join()
         time.sleep(0.2)
 
+
+if not os.path.exists(os.path.join(config_path, "windowopenorclose.txt")):
+    with open(os.path.join(config_path, "windowopenorclose.txt"), "w") as f:
+        f.write("close")
+def settings():
+    #global select_python_version_combobox, python_download_mirror, allow_thread_combobox, switch, themes, python_version
+    import sv_ttk
+    with open(os.path.join(config_path, "windowopenorclose.txt"), "w") as w: 
+        w.write("open")
+    def on_closing():
+        with open(os.path.join(config_path, "windowopenorclose.txt"), "w") as f:
+            f.write("close")	
+        w.destroy()
+    def switch_theme():
+        """切换主题"""
+        if build>22000:
+            if switch.get():
+                sv_ttk.set_theme("dark")
+                save_theme("dark")
+            else:
+                sv_ttk.set_theme("light")
+                save_theme("light")
+
+    def load_theme():
+        """加载主题设置"""
+        if build>22000:
+            try:
+                with open(os.path.join(config_path, "theme.txt"), "r") as r:
+                    theme = r.read()
+                if theme == "dark":
+                    switch.set(True)
+                    sv_ttk.set_theme("dark")
+                elif theme == "light":
+                    switch.set(False)
+                    sv_ttk.set_theme("light")
+            except:
+                sv_ttk.set_theme("light")
+    def save_settings():
+        def save_thread():
+            try:
+                with open(os.path.join(config_path, "pythonmirror.txt"), "a") as b:
+                    if python_download_mirror.get()!="" or python_download_mirror.get()!=None:
+                        b.write(python_download_mirror.get())
+                        b.write("\n")
+                with open(os.path.join(config_path, "allowthread.txt"), "a") as c:
+                    if allow_thread_combobox.get()!="" or allow_thread_combobox.get()!=None:
+                        c.write(allow_thread_combobox.get())
+                        c.write("\n")
+                with open(os.path.join(config_path, "pythonversion.txt"), "a") as d:
+                    if (select_python_version_combobox.get()!="" or select_python_version_combobox.get()!=None) and "Pip" in select_python_version_combobox.get():
+                        d.write(select_python_version_combobox.get())
+                        d.write("\n")
+            except:
+                pass
+        while True:
+            with open(os.path.join(config_path, "windowopenorclose.txt"), "r") as r:
+                aa=r.readline()
+            if aa=="open":
+                a=threading.Thread(target=save_thread,daemon=True)
+                a.start()
+                a.join()
+            time.sleep(0.2)
+    def read_pythonmirror():
+        if os.path.exists(os.path.join(config_path, "pythonmirror.txt")):
+            with open(os.path.join(config_path, "pythonmirror.txt"), "r") as r:
+                aa=r.readlines()
+                if len(aa)>0:
+                    b=aa[len(aa)-1].strip("\n")
+                    for i in range(len(PYTHON_MIRRORS)):
+                        if b==PYTHON_MIRRORS[i]:
+                            return i
+                else:
+                    return 0
+        else:
+            return 0
+    def read_allowthread():
+        if os.path.exists(os.path.join(config_path, "allowthread.txt")):
+            with open(os.path.join(config_path, "allowthread.txt"), "r") as r:
+                aa=r.readlines()[-1].strip("\n")
+                if aa=="True":
+                    return 0
+                else:
+                    return 1
+        else:
+            return 1
+    
+    def read_py_ver():
+        python_version=get_python_version()
+        if os.path.exists(os.path.join(config_path, "pythonversion.txt")):
+            with open(os.path.join(config_path, "pythonversion.txt"), "r") as r:
+                a=r.readlines()
+                if len(a)>=1:
+                    aa=a[len(a)-1].strip("\n")
+                    if aa in python_version:
+                        for i in range(len(python_version)):
+                            if aa==python_version[i]:
+                                return i
+                else: 
+                    return 0
+        else:
+            return 0
+    py_ver=read_py_ver()
+    
+    w=tk.Toplevel(root)
+    w.title("Settings")
+    w.resizable(False, False)
+    icon_path = os.path.join(MY_PATH, 'pyquick.ico')
+    if os.path.exists(icon_path):
+        w.iconbitmap(icon_path)
+    tab_base=ttk.Notebook(w)
+
+    theme_frame = ttk.Frame(tab_base, padding="10")
+    python_downlod_frame = ttk.Frame(tab_base, padding="10")
+    pip_se_frame = ttk.Frame(tab_base, padding="10")
+    tab_base.add(theme_frame, text="Switch Theme")
+    tab_base.add(python_downlod_frame, text="Python Download Settings")
+    tab_base.add(pip_se_frame, text="Pip Settings")
+    tab_base.grid(padx=10, pady=10, row=0, column=0)
+
+    if build>22000:
+        switch = tk.BooleanVar()
+        themes = ttk.Checkbutton(theme_frame, text="Dark Mode", variable=switch, style="Switch.TCheckbutton", command=switch_theme)
+        themes.grid(row=0, column=0, pady=10, padx=10, sticky="w")
+    if build<22000:
+        warnings=ttk.Label(theme_frame,text="Unless you upgrade to Windows 11(21H2 or later), you can not switch your theme.",foreground="red")
+        warnings.grid(row=0, column=0, pady=10, padx=10, sticky="w")
+    python_download_key_label = ttk.Label(python_downlod_frame, text="Choose Python Download Mirror:")
+    python_download_key_label.grid(row=0, column=0, pady=10, padx=10, sticky="e")
+
+    python_download_mirror=ttk.Combobox(python_downlod_frame,values=PYTHON_MIRRORS)
+    python_download_mirror.grid(row=0, column=1, pady=10, padx=10, sticky="w")
+    python_download_mirror.current(read_pythonmirror())
+
+    allow_thread_label=ttk.Label(python_downlod_frame,text="Allow Threads During Download:")
+    allow_thread_label.grid(row=1, column=0, pady=10, padx=10, sticky="e")
+
+    allow_thread_combobox=ttk.Combobox(python_downlod_frame,values=["True","False"],state="readonly")
+    allow_thread_combobox.grid(row=1, column=1, pady=10, padx=10, sticky="w")
+    allow_thread_combobox.current(read_allowthread())
+    def open_close():
+        def thread():
+            if is_downloading:
+                allow_thread_combobox.config(state="disabled")
+        while True:
+            threading.Thread(target=thread, daemon=True).start()
+            time.sleep(0.5)
+
+    select_python_version_label = ttk.Label(pip_se_frame, text="Select Python Version:")
+    select_python_version_label.grid(row=0, column=0, pady=10, padx=10, sticky="e")
+
+    python_version=get_python_version()
+    select_python_version_combobox=ttk.Combobox(pip_se_frame,values=python_version,state="readonly")
+    select_python_version_combobox.grid(row=0, column=1, pady=10, padx=10, sticky="w")
+    select_python_version_combobox.current(py_ver)
+
+    if build>22000:
+        load_theme()
+    threading.Thread(target=save_settings, daemon=True).start()
+    threading.Thread(target=open_close, daemon=True).start()
+    w.mainloop()
 
 
 
