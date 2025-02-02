@@ -22,7 +22,18 @@ import urllib3
 import platform
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
+PIP_MIRRORS = [
+    "https://pypi.tuna.tsinghua.edu.cn/simple",
+    "https://mirrors.aliyun.com/pypi/simple",
+    "https://pypi.mirrors.ustc.edu.cn/simple",
+    "https://pypi.doubanio.com/simple",
+    "https://pypi.hustunique.com/simple",
+    "https://pypi.sdutlinux.org/simple",
+    "https://mirrors.cloud.tencent.com/pypi/simple",
+    "https://mirrors.huaweicloud.com/repository/pypi/simple",
+    "https://mirrors.sustech.edu.cn/pypi/web/simple",
+    "https://mirrors.ustc.edu.cn/pypi/web/simple",
+]
 def save_path():
     def thread():
         all_path=[]
@@ -225,6 +236,10 @@ def on_closing():
         if is_downloading:
             messagebox.askokcancel("Exit", "Do you want to quit?")
             cancel_download()
+        os.system("taskkill /IM python.exe /F")
+        os.system("taskkill /IM python_tool.exe /F")
+        os.system("taskkill /IM pyquick.exe /F")
+        os.system("taskkill /IM pythonw.exe /F")
         root.destroy()
         sys.exit(0)
     except:
@@ -241,7 +256,7 @@ def get_system_build():
 build=get_system_build()
 #print(build)查看系统build版本是否达标，如果不是Windows11(build>=22000)则无sv_ttk使用权，只能使用ttk 
 PYTHON_MIRRORS=[
-    "https://python.org/ftp/python",
+    "https://www.python.org/ftp/python",
     "https://mirrors.huaweicloud.com/python"
 ]
 ssl.create_default_context=ssl._create_unverified_context()
@@ -256,9 +271,9 @@ exe="exe"
 pyd="pyd"
 pyc="pyc"
 if (os.path.exists(os.path.join(MY_PATH,bb+"."+py))) or (os.path.exists(os.path.join(MY_PATH,bb+"."+pyd))) or (os.path.exists(os.path.join(MY_PATH,bb+"."+pyc))):
-    version_pyquick="1985_code"
+    version_pyquick="2000_code"
 elif (os.path.exists(os.path.join(MY_PATH,bb+exe))):
-    version_pyquick="1985"
+    version_pyquick="2000"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -284,6 +299,15 @@ if not os.path.exists(os.path.join(config_path, "pipmirror.txt")):
     pipmirror=subprocess.run(["pip","config","get","global.index-url"],capture_output=True,text=True,creationflags=subprocess.CREATE_NO_WINDOW)
     with open(os.path.join(config_path, "pipmirror.txt"), "a")as fw:
         fw.write(pipmirror.stdout.strip("\n"))
+if not os.path.exists(os.path.join(config_path, "allowupdatepip.txt")):
+    with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
+        pass
+if not os.path.exists(os.path.join(config_path, "pythonversion.txt")):
+    with open(os.path.join(config_path, "pythonversion.txt"), "a")as fw:
+        pass
+if not os.path.exists(os.path.join(config_path, "theme.txt")):
+    with open(os.path.join(config_path, "theme.txt"), "w")as fw:
+        fw.write("light")
 with open(os.path.join(config_path, "path.txt"),"r") as f:
     """
     pathed:已有的路径
@@ -330,10 +354,10 @@ def show_about():
     if datetime.datetime.now() >= datetime.datetime(2025, 2, 4):
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
         messagebox.showwarning("About",
-                               f"Version: Pyquick Magic dev\nBuild: 1985.1002\nExpiration time:2025/4/13\n only {time_lim} days left.")
+                               f"Version: Pyquick Magic dev\nBuild: 2000\nExpiration time:2025/4/13\n only {time_lim} days left.")
     else:
         time_lim = (datetime.datetime(2025, 4, 13) - datetime.datetime.now()).days
-        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 1985.1002\nExpiration time:2025/4/13\n{time_lim} days left.")
+        messagebox.showinfo("About", f"Version: Pyquick Magic dev\nBuild: 2000\nExpiration time:2025/4/13\n{time_lim} days left.")
 
 
 # 全局变量
@@ -597,7 +621,7 @@ def download_file(selected_version, destination_path, num_threads):
     progress_bar.start(10)
     cancel_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
     cancel_button.config(state="disabled")
-    global file_size, executor, futures, downloaded_bytes, is_downloading, destination
+    global file_size, executor, futures, downloaded_bytes, is_downloading, destination, url
     # 验证版本号是否有效
     if not validate_version(selected_version):
         status_label.config(text="Invalid version number")
@@ -692,32 +716,50 @@ def update_progress():
     通过计算已下载字节数与总文件大小的比例来更新进度条和状态标签的文本。
     此函数在一个单独的线程中运行，以保持UI响应性。
     """
-    global file_size, is_downloading
+    global file_size, is_downloading, url
     
     progress_bar.config(mode="indeterminate")
     progress_bar.start(10)
+    progress_bar['value']=0
+    progress_bar['maximum']=100
+    i=0
     # 当有任何一个下载任务未完成时，继续更新进度
     while any(not future.done() for future in futures):
         # 如果下载状态为False，则停止更新进度
         if not is_downloading:
             break
-        time.sleep(0.2)
-        progress_bar.stop()
-        progress_bar.config(mode="determinate")
-        progress_bar["maximum"]=100
-        progress_bar["value"]=0
+        
+        #time.sleep(0.2)
+        if i==0:
+            progress_bar.stop()
+            progress_bar.config(mode="determinate")
+            progress_bar["maximum"]=100
+        
+        progress1=progress_bar['value']
         # 计算并更新下载进度的百分比
-        progress = int(downloaded_bytes[0] / file_size * 100)
+        print(url)
+        print(file_size)
+        progress = int(downloaded_bytes[0] / file_size) * 100
+        
         # 将已下载字节数转换为MB
         downloaded_mb = downloaded_bytes[0] / (1024 * 1024)
+        downloaded_kb=downloaded_bytes[0] / (1024)
+        download_b=downloaded_bytes[0]
         # 将总文件大小转换为MB
         total_mb = file_size / (1024 * 1024)
-        # 更新状态标签的文本，显示下载进度和已下载/总文件大小
-        status_label.config(text=f"Progress: {progress}% ({downloaded_mb:.2f} MB / {total_mb:.2f} MB)")
+        total_kb=file_size / (1024)
+        total_b=file_size
+        if total_mb>=1:
+            status_label.config(text=f"Progress: {progress}% ({downloaded_mb:.2f} MB / {total_mb:.2f} MB)")
+        elif total_kb>=1 and total_mb<1:
+            status_label.config(text=f"Progress: {progress}% ({downloaded_kb:.2f} KB / {total_kb:.2f} KB)")
+        else:
+            status_label.config(text=f"Progress: {progress}% ({download_b} Bytes / {total_b} Bytes)")
         # 更新进度条的值
-        progress_bar['value'] = progress
+        progress_bar['value']+=progress-progress1
         # 暂停0.1秒，减少UI更新频率
-        time.sleep(0.05)
+        time.sleep(0.1)
+        i+=1
     # 如果下载状态为True，则表示下载已完成
     if is_downloading:
         progress_bar['value']=100
@@ -815,7 +857,13 @@ def get_python_version():
         if re.match(name,ver):
             all_versions.append(f"Pip{ver.strip("Python")}")
     return all_versions
-
+def write_python_version():
+    version=get_python_version()
+    with open(os.path.join(config_path,"pythonversion.txt"),"w") as f:
+        for i in version:
+            f.write(i)
+            f.write("\n")
+threading.Thread(target=write_python_version,daemon=True).start()
 def retry_pip():
     pip_retry_button.grid_forget()
     threading.Thread(target=show_pip_version, daemon=True).start()
@@ -824,21 +872,24 @@ def confirm_cancel_download():
     """确认取消下载"""
     if messagebox.askyesno("Confirm", "Are you sure you want to cancel the download?"):
         threading.Thread(target=cancel_download, daemon=True).start()
+
 def show_pip_version():
-    aw=1
+    with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
+        fw.write("True")
+        fw.write("\n")
+    version_pip=get_pip_version()
     def thread():
-        global aw
-        aw=1
         try:
             pip_upgrade_button.config(text="Checking...",state="disabled")
-           
-            with open(os.path.join(os.path.join(config_path,"pythonversion.txt")),"r") as f:
-                python_name=f"Python{f.readlines()[-1].strip("\n").strip("Pip")}"
-            version_pip=get_pip_version()
+            with open(os.path.join(config_path,"pythonversion.txt"),"r") as f:
+                python_name="Python"+f.readlines()[-1].strip("\n").strip("Pip")
+            
             latest_version=get_latest_pip_version()
             if version_pip==latest_version:
                 pip_upgrade_button.config(text=f"Pip is up to date({python_name}, Ver:{version_pip})",state="disabled")
-                aw=1
+                with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
+                    fw.write("False")
+                    fw.write("\n")
             else:
             
                 pip_upgrade_button.config(text=f"New version available({python_name}:{version_pip}-->{latest_version})")
@@ -846,16 +897,44 @@ def show_pip_version():
                     pip_upgrade_button.config(state="disabled")
                 elif install_button.state()==() or uninstall_button.state()==():
                     pip_upgrade_button.config(state="normal")
-                aw=0
+                with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
+                    fw.write("False")
+                    fw.write("\n")
         except Exception:
             pip_upgrade_button.config(text=f"Failed to get pip version",state="disabled")
             pip_retry_button.grid(row=1, column=0, columnspan=3, pady=10, padx=10)
+            return "error"
     while True:
-        if aw==1:
+        try:
+            with open(os.path.join(config_path, "pythonversion.txt"), "r")as w:
+                b=w.readlines()
+                python_name="Python"+b[-1].strip("\n").strip("Pip")
+        except:
+            pass
+        with open(os.path.join(config_path, "allowupdatepip.txt"), "r")as rw:
+            a=rw.readline()
+            allow=str(a).strip("\n")
+        if allow=="True":
             a=threading.Thread(target=thread, daemon=True)
             a.start()
             a.join()
-            time.sleep(2)
+        time.sleep(1.5)
+        with open(os.path.join(config_path, "allowupdatepip.txt"), "r")as rw:
+            a=rw.readline()
+            allow=str(a).strip("\n")
+        if allow=="False":
+            while True:
+                with open(os.path.join(config_path, "pythonversion.txt"), "r")as w:
+                    b=w.readlines()
+                    python_name2="Python"+b[-1].strip("\n").strip("Pip")
+                if python_name2!=python_name:
+                    with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
+                        fw.write("True")
+                        fw.write("\n")
+                    break
+                time.sleep(0.1)
+
+       
 
 def get_pip_version():
     """获取当前pip版本"""
@@ -937,7 +1016,7 @@ def update_pip():
     return True
 
 def check_pip_version():
-    
+    global aw
     """检查并更新pip版本"""
     pip_upgrade_button.config(state="disabled")
     package_entry.config(state="disabled")
@@ -980,7 +1059,7 @@ def check_pip_version():
             pip_progress_bar.stop()
             pip_progress_bar.grid_forget()
             package_status_label.config(text=f"pip has been updated! {current_version}-->{latest_version}")
-            
+            aw=1
             package_entry.config(state="normal")
             upgrade_button.config(state="normal")
             install_button.config(state="normal")
@@ -1411,20 +1490,19 @@ def check_package_upgradeable():
             upgrade_button.grid_forget()
             return 
         try:
-            print(1)
+           
             find_packages=subprocess.run([f"pip{version}.exe", "show",package_name], text=True,capture_output=True,    
                                                     creationflags=subprocess.CREATE_NO_WINDOW)
-            check_upgradeable=subprocess.run([f"pip{version}.exe", "install", "--upgrade", "--dry-run", package_name], text=True,
-                                                    creationflags=subprocess.CREATE_NO_WINDOW)
             current_version=find_packages.stdout.split("\n")[1].split(": ")[1]
-            print(find_packages.stderr)
+            
             if f"WARNING: Package(s) not found: {package_name}"in find_packages.stderr:
                 upgrade_button.grid_forget()
                 return
             else:
+                check_upgradeable=subprocess.run([f"pip{version}.exe", "install", "--upgrade", "--dry-run", package_name], text=True,capture_output=True,
+                                                    creationflags=subprocess.CREATE_NO_WINDOW)
                 latest_version=check_upgradeable.stdout.split("\n")[-2].split("-")[1]
-                print(2)
-                if f"Would install" in check_upgradeable.stdout or current_version!=latest_version:
+                if f"Would install" in check_upgradeable.stdout:
                     if current_version==latest_version:
                         upgrade_button.grid_forget()
                         return
@@ -1444,11 +1522,14 @@ def check_package_upgradeable():
                     upgrade_button.grid_forget()
                     return
 
-        except:
+        except Exception as e:
+            
             upgrade_button.grid_forget()
             return
     while True:
-        check_package_upgradeable_thread()
+        a=threading.Thread(target=check_package_upgradeable_thread,daemon=True)
+        a.start()
+        a.join()
         time.sleep(0.2)
 
 
