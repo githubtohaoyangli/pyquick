@@ -122,10 +122,7 @@ py="py"
 exe="exe"
 pyd="pyd"
 pyc="pyc"
-if (os.path.exists(os.path.join(MY_PATH,bb+"."+py))) or (os.path.exists(os.path.join(MY_PATH,bb+"."+pyd))) or (os.path.exists(os.path.join(MY_PATH,bb+"."+pyc))):
-    version_pyquick="2000_code"
-elif (os.path.exists(os.path.join(MY_PATH,bb+exe))):
-    version_pyquick="2000"
+version_pyquick="2000"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
 config_path=os.path.join(config_path_base,version_pyquick)
@@ -140,8 +137,8 @@ if not os.path.exists(os.path.join(config_path,"pipmirror.txt")):
 
 # 如果保存目录不存在，则创建它
 
-if not os.path.exists(os.path.join(config_path, "path.txt")):
-    with open(os.path.join(config_path, "path.txt"), "a"):
+if not os.path.exists(os.path.join(config_path_base, "path.txt")):
+    with open(os.path.join(config_path_base, "path.txt"), "a"):
         pass
 if not os.path.exists(os.path.join(config_path, "allowthread.txt")):
     with open(os.path.join(config_path, "allowthread.txt"), "a")as fw:
@@ -160,7 +157,7 @@ if not os.path.exists(os.path.join(config_path, "pythonversion.txt")):
 if not os.path.exists(os.path.join(config_path, "theme.txt")):
     with open(os.path.join(config_path, "theme.txt"), "w")as fw:
         fw.write("light")
-with open(os.path.join(config_path, "path.txt"),"r") as f:
+with open(os.path.join(config_path_base, "path.txt"),"r") as f:
     """
     pathed:已有的路径
     """
@@ -172,31 +169,21 @@ with open(os.path.join(config_path, "path.txt"),"r") as f:
     writable=True
     
     for j in pathed:
-        if str(j)==str(os.path.join(MY_PATH,os.path.basename(__file__))):
+        print(j)
+        if str(j).strip("\n\r")==str(os.path.join(MY_PATH,os.path.basename(__file__))):
             writable=False
             break
     if writable:
-        
-        if os.path.exists(aa):
-            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
-                f.write(os.path.join(MY_PATH,os.path.basename(__file__)))
-                f.write("\n")
-        elif(os.path.exists(os.path.join(MY_PATH,bb+"."+py))):
-            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
-                f.write(os.path.join(MY_PATH,bb+py))
-                f.write("\n")
-        elif(os.path.exists(os.path.join(MY_PATH,bb+"."+exe))):
-            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
-                f.write(os.path.join(MY_PATH,bb+exe))
-                f.write("\n")
-        elif(os.path.exists(os.path.join(MY_PATH,bb+"."+pyd))):
-            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
-                f.write(os.path.join(MY_PATH,bb+pyd))
-                f.write("\n")
-        elif(os.path.exists(os.path.join(MY_PATH,bb+"."+pyc))):
-            with open(os.path.join(config_path_base, "path.txt"), "a") as f:
-                f.write(os.path.join(MY_PATH,bb+pyc))
-                f.write("\n")
+        try:
+            if os.path.exists(os.path.join(MY_PATH,os.path.basename(__file__))):
+                with open(os.path.join(config_path_base, "path.txt"), "a") as fw:
+                    fw.write(os.path.join(MY_PATH,os.path.basename(__file__))+"\n")
+            elif os.path.exists(os.path.join(MY_PATH,os.path.basename(__file__).strip(".py")+".exe")):
+                with open(os.path.join(config_path_base, "path.txt"), "a") as fw:
+                    fw.write(os.path.join(MY_PATH,os.path.basename(__file__).strip(".py")+".exe")+"\n")
+        except:
+            pass
+            
         
 
 
