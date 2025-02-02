@@ -5,7 +5,6 @@ import datetime
 import logging
 import os
 import re
-import ctypes
 import sys
 import subprocess
 import threading
@@ -20,8 +19,6 @@ import urllib3
 from bs4 import BeautifulSoup
 import urllib3
 import platform
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 PIP_MIRRORS = [
     "https://pypi.tuna.tsinghua.edu.cn/simple",
     "https://mirrors.aliyun.com/pypi/simple",
