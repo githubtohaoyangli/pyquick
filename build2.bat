@@ -1,0 +1,1 @@
+cxfreeze --include-files="pyquick.ico" --icon="pyquick.ico" --base-name="Win32GUI" pyquick.py

@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import sys
+
 import subprocess
 import threading
 import time
@@ -19,6 +20,25 @@ import urllib3
 from bs4 import BeautifulSoup
 import urllib3
 import platform
+requests.packages.urllib3.disable_warnings()
+
+def get_python_version():
+    """获取当前Python版本"""
+    all_versions=[]
+    versions_base=subprocess.run(["where","python"],capture_output=True,creationflags=subprocess.CREATE_NO_WINDOW)
+    python_version=(versions_base.stdout).decode().split("\n")
+    #print(python_version)
+    name=r"Python\d+"
+    for i in python_version:
+        if i=="" or i==None or i=="\r":
+            continue
+        j=i.strip("\r")
+        python_ver=j.split("\\")
+        if len(python_ver)>2:
+            ver=python_ver[-2]
+        if re.match(name,ver):
+            all_versions.append(f"Pip{ver.strip("Python")}")
+    return all_versions
 PIP_MIRRORS = [
     "https://pypi.tuna.tsinghua.edu.cn/simple",
     "https://mirrors.aliyun.com/pypi/simple",
@@ -88,17 +108,19 @@ def on_closing():
         if is_downloading:
             messagebox.askokcancel("Exit", "Do you want to quit?")
             cancel_download()
-        os.system("taskkill /IM python.exe /F")
-        os.system("taskkill /IM python_tool.exe /F")
-        os.system("taskkill /IM pyquick.exe /F")
-        os.system("taskkill /IM pythonw.exe /F")
         root.destroy()
         sys.exit(0)
+        subprocess.run(["taskkill","/IM","python.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True)
+        subprocess.run(["taskkill","/IM","python_tool.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True)
+        subprocess.run(["taskkill","/IM","pyquick.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True)
+        subprocess.run(["taskkill","/IM","pythonw.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True) 
+        subprocess.run(["taskkill","/IM","pythonw.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True) 
     except:
-        os.system("taskkill /IM python.exe /F")
-        os.system("taskkill /IM python_tool.exe /F")
-        os.system("taskkill /IM pyquick.exe /F")
-        os.system("taskkill /IM pythonw.exe /F")
+        subprocess.run(["taskkill","/IM","python.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True)
+        subprocess.run(["taskkill","/IM","python_tool.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True)
+        subprocess.run(["taskkill","/IM","pyquick.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True)
+        subprocess.run(["taskkill","/IM","pythonw.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True) 
+        subprocess.run(["taskkill","/IM","pythonw.exe","/F"],creationflags=subprocess.CREATE_NO_WINDOW,text=True,capture_output=True) 
 
 
 def get_system_build():
@@ -116,12 +138,9 @@ ssl.create_default_context=ssl._create_unverified_context()
 urllib3.disable_warnings()
 # 获取当前工作目录
 MY_PATH = os.getcwd()
+print(MY_PATH)
 aa=os.path.join(MY_PATH,os.path.basename(__file__))
 bb=os.path.basename(__file__).split(".")[0]
-py="py"
-exe="exe"
-pyd="pyd"
-pyc="pyc"
 version_pyquick="2000"
 # 获取用户配置目录
 config_path_base = os.path.join(os.environ["APPDATA"], f"pyquick")
@@ -153,36 +172,12 @@ if not os.path.exists(os.path.join(config_path, "allowupdatepip.txt")):
         pass
 if not os.path.exists(os.path.join(config_path, "pythonversion.txt")):
     with open(os.path.join(config_path, "pythonversion.txt"), "a")as fw:
-        pass
+        py=get_python_version()
+        fw.write(py[0])
 if not os.path.exists(os.path.join(config_path, "theme.txt")):
     with open(os.path.join(config_path, "theme.txt"), "w")as fw:
         fw.write("light")
-with open(os.path.join(config_path_base, "path.txt"),"r") as f:
-    """
-    pathed:已有的路径
-    """
-    #print(os.path.join(config_path_base, "path.txt"))
-    pathed=[]
-    a=f.readlines()
-    for i in a:
-        pathed.append(i.strip("\n"))
-    writable=True
-    
-    for j in pathed:
-        print(j)
-        if str(j).strip("\n\r")==str(os.path.join(MY_PATH,os.path.basename(__file__))):
-            writable=False
-            break
-    if writable:
-        try:
-            if os.path.exists(os.path.join(MY_PATH,os.path.basename(__file__))):
-                with open(os.path.join(config_path_base, "path.txt"), "a") as fw:
-                    fw.write(os.path.join(MY_PATH,os.path.basename(__file__))+"\n")
-            elif os.path.exists(os.path.join(MY_PATH,os.path.basename(__file__).strip(".py")+".exe")):
-                with open(os.path.join(config_path_base, "path.txt"), "a") as fw:
-                    fw.write(os.path.join(MY_PATH,os.path.basename(__file__).strip(".py")+".exe")+"\n")
-        except:
-            pass
+               
             
         
 
@@ -548,20 +543,18 @@ def download_file(selected_version, destination_path, num_threads):
     # 启用取消下载按钮
     
 
-
+ib=0
 def update_progress():
     """更新进度条和状态标签
 
     通过计算已下载字节数与总文件大小的比例来更新进度条和状态标签的文本。
     此函数在一个单独的线程中运行，以保持UI响应性。
     """
-    global file_size, is_downloading, url
+    global file_size, is_downloading, url, ib
     
     progress_bar.config(mode="indeterminate")
     progress_bar.start(10)
-    progress_bar['value']=0
-    progress_bar['maximum']=100
-    i=0
+    
     # 当有任何一个下载任务未完成时，继续更新进度
     while any(not future.done() for future in futures):
         # 如果下载状态为False，则停止更新进度
@@ -569,15 +562,13 @@ def update_progress():
             break
         
         #time.sleep(0.2)
-        if i==0:
+        if ib==0:
             progress_bar.stop()
             progress_bar.config(mode="determinate")
             progress_bar["maximum"]=100
-        
-        progress1=progress_bar['value']
         # 计算并更新下载进度的百分比
-        
-        progress = int(downloaded_bytes[0] / file_size) * 100
+        ib+=1
+        progress = int(downloaded_bytes[0] / file_size * 100)
         
         # 将已下载字节数转换为MB
         downloaded_mb = downloaded_bytes[0] / (1024 * 1024)
@@ -588,16 +579,19 @@ def update_progress():
         total_kb=file_size / (1024)
         total_b=file_size
         if total_mb>=1:
+            progress_bar['value']=progress
             status_label.config(text=f"Progress: {progress}% ({downloaded_mb:.2f} MB / {total_mb:.2f} MB)")
         elif total_kb>=1 and total_mb<1:
+            progress_bar['value']=progress
             status_label.config(text=f"Progress: {progress}% ({downloaded_kb:.2f} KB / {total_kb:.2f} KB)")
         else:
+            progress_bar['value']=progress
             status_label.config(text=f"Progress: {progress}% ({download_b} Bytes / {total_b} Bytes)")
         # 更新进度条的值
-        progress_bar['value']+=progress-progress1
+        progress_bar['value']=progress
         # 暂停0.1秒，减少UI更新频率
         time.sleep(0.1)
-        i+=1
+        
     # 如果下载状态为True，则表示下载已完成
     if is_downloading:
         progress_bar['value']=100
@@ -678,23 +672,7 @@ def download_selected_version():
     root.protocol("WM_DELETE_WINDOW", on_closing)
     threading.Thread(target=download_file, args=(selected_version, destination_path, num_threads), daemon=True).start()
 
-def get_python_version():
-    """获取当前Python版本"""
-    all_versions=[]
-    versions_base=subprocess.run(["where","python"],capture_output=True,creationflags=subprocess.CREATE_NO_WINDOW)
-    python_version=(versions_base.stdout).decode().split("\n")
-    #print(python_version)
-    name=r"Python\d+"
-    for i in python_version:
-        if i=="" or i==None or i=="\r":
-            continue
-        j=i.strip("\r")
-        python_ver=j.split("\\")
-        if len(python_ver)>2:
-            ver=python_ver[-2]
-        if re.match(name,ver):
-            all_versions.append(f"Pip{ver.strip("Python")}")
-    return all_versions
+
 
 def retry_pip():
     pip_retry_button.grid_forget()
@@ -709,13 +687,14 @@ def show_pip_version():
     with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
         fw.write("True")
         fw.write("\n")
-    version_pip=get_pip_version()
+    
     def thread():
+        pip_upgrade_button.config(text="Checking...",state="disabled")
+        time.sleep(0.5)
         try:
-            pip_upgrade_button.config(text="Checking...",state="disabled")
+            version_pip=get_pip_version()
             with open(os.path.join(config_path,"pythonversion.txt"),"r") as f:
                 b=f.readlines()
-                
                 python_name="Python"+b[-1].strip("\n").strip("Pip")
             
             latest_version=get_latest_pip_version()
@@ -752,7 +731,7 @@ def show_pip_version():
             a=threading.Thread(target=thread, daemon=True)
             a.start()
             a.join()
-        time.sleep(1.5)
+            time.sleep(1)
         with open(os.path.join(config_path, "allowupdatepip.txt"), "r")as rw:
             a=rw.readline()
             allow=str(a).strip("\n")
@@ -761,6 +740,13 @@ def show_pip_version():
                 with open(os.path.join(config_path, "pythonversion.txt"), "r")as w:
                     b=w.readlines()
                     python_name2="Python"+b[-1].strip("\n").strip("Pip")
+                with open(os.path.join(config_path, "allowupdatepip.txt"), "r")as rw:
+                    a=rw.readline()
+                    allow=str(a).strip("\n")
+                if allow=="False":
+                    pass
+                else:
+                    break
                 if python_name2!=python_name:
                     with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
                         fw.write("True")
@@ -894,6 +880,9 @@ def check_pip_version():
             pip_progress_bar.grid_forget()
             package_status_label.config(text=f"pip has been updated! {current_version}-->{latest_version}")
             aw=1
+            with open(os.path.join(config_path, "allowupdatepip.txt"), "w")as fw:
+                fw.write("True")
+                fw.write("\n")
             package_entry.config(state="normal")
             upgrade_button.config(state="normal")
             install_button.config(state="normal")
