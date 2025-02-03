@@ -94,18 +94,6 @@ VERSIONS = [
     "3.5.3",
     "3.5.4",
 ]
-MIRROR_PYTHODOWLOADER = [
-    #https://registry.npmmirror.com/-/binary/python/3.10.0
-    #https://registry.npmmirror.com/-/binary/python/3.10.0/python-3.10.0-amd64.exe
-    "python.org",
-    "registry.npmmirror.com(China)"
-]
-PYTHONTOOL_DOWNLAOD = [
-    "github.io",
-    "github.com",
-    "ghp.ci"
-]
-
 
 def check_python_installation(delay=3000):
     """
@@ -279,33 +267,12 @@ def download_file(destination_path):
         sav_ver()
         down_thread = threading.Thread(target=download, args=(url, destination), daemon=True)
         down_thread.start()
-        cancel_download_button.config(state="enabled")
         down_thread.join()
-        cancel_download_button.config(state="disabled")
     except Exception as e:
         status_label.config(text=f"Download Failed: {str(e)}")
         root.after(3000, clear_a)
 
-# 中断下载函数
-def cancel_download():
-    cancel_event.set()
-    status_label.config(text="Cancelling download...")
-    download_pb['value'] = 0  # 重置进度条
-    
-    # 获取目标文件路径
-    destination_path = destination_entry.get()
-    url = get_url(1)
-    file_name = url.split("/")[-1]
-    destination = os.path.join(destination_path, file_name)
-    
-    # 检查目标文件是否存在，如果存在则删除
-    if os.path.exists(destination):
-        os.remove(destination)
-        status_label.config(text="Download cancelled and incomplete file removed.")
-    else:
-        status_label.config(text="Download cancelled.")
-    
-    root.after(3000, clear_a)
+
 
 # 下载版本函数
 def download_selected_version():
@@ -359,31 +326,7 @@ def get_current_pip_version():
 
 
 
-# 创建一个线程池，最大工作线程数为 5
-executor = ThreadPoolExecutor(max_workers=5)
 
-def update_pip_button_text():
-    """
-    更新 pip 升级按钮的文本。
-    """
-    def update_pip_button():
-        """
-        更新按钮文本的具体逻辑。
-        """
-        try:
-            # 获取当前 pip 版本
-            current_version = get_current_pip_version()
-            # 更新按钮文本
-            pip_upgrade_button.config(text=f"Upgrade pip: {current_version}")
-        except Exception as e:
-            # 记录错误日志
-            logging.error(f"Error updating pip button text: {str(e)}")
-            # 设置按钮文本为错误提示
-            pip_upgrade_button.config(text="Error: Failed to update pip version")
-        # 每 5 秒钟再次调用此函数
-        root.after(5000, update_pip_button_text)
-    # 提交任务到线程池
-    executor.submit(update_pip_button)
     
 @functools.lru_cache(maxsize=1)
 def get_latest_pip_version():
@@ -429,10 +372,10 @@ def update_pip(latest_version):
             up_pip = subprocess.run(command, capture_output=True, text=True, check=True)
             if "Successfully installed" in up_pip.stdout:
                 status_label.config(text=SUCCESS_MSG.format(latest_version))
-                update_pip_button_text()
+                
             else:
                 status_label.config(text=FAILURE_MSG)
-                update_pip_button_text()
+    
             root.after(3000, clear_a)
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to update pip with '{command[0]}': {str(e)}")
@@ -700,10 +643,8 @@ select_button.grid(row=1, column=2, pady=10,padx=10)
 #DOWNLOAD
 download_button = ttk.Button(framea_tab, text="Download Selected Version", command=download_selected_version)
 download_button.grid(row=2, column=0, columnspan=5, pady=10)
-cancel_download_button = ttk.Button(framea_tab, text="Cancel Download", command=cancel_download, state="disabled")
-cancel_download_button.grid(row=3, column=0, columnspan=3, pady=10)
 #PIP(UPDRADE)
-pip_upgrade_button = ttk.Button(framea_tab, text="Upgrade pip: Checking...", command=upgrade_pip)
+pip_upgrade_button = ttk.Button(framea_tab, text="Upgrade pip", command=upgrade_pip)
 pip_upgrade_button.grid(row=4, column=0, columnspan=3, pady=20)
 upgrade_pip_button = pip_upgrade_button  # Alias for disabling/enabling later
 package_label = ttk.Label(framea_tab, text="Enter Package Name:")
@@ -756,7 +697,7 @@ sav_label.grid(row=6, column=0,columnspan=3)
 load()
 load_theme()
 # Set sv_ttk theme
-update_pip_button_text()
+
 check_python_installation()
 
 refresh_thread = threading.Thread(target=refresh_versions, daemon=True)
