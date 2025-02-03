@@ -14,34 +14,58 @@ import logging
 import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
+from bs4 import BeautifulSoup
+
 cancel_event = threading.Event()
 user_name = getpass.getuser()
 if os.path.exists(f"/Users/{user_name}/pt_saved/update"):
     shutil.rmtree(f"/Users/{user_name}/pt_saved/update")
     os.system("kill Update")
-VERSIONS = [
-    "3.13.0","3.13.1",
-    "3.12.0","3.12.1","3.12.2","3.12.3","3.12.4","3.12.5","3.12.6","3.12.7","3.12.8",
-    "3.11.0","3.11.1","3.11.2","3.11.3","3.11.4","3.11.5","3.11.6","3.11.7","3.11.8","3.11.9",
-    "3.10.0","3.10.1","3.10.2","3.10.3","3.10.4","3.10.5","3.10.6","3.10.7","3.10.8","3.10.9","3.10.10","3.10.11",
-    "3.9.0","3.9.1","3.9.2","3.9.3","3.9.4","3.9.5","3.9.6","3.9.7","3.9.8","3.9.9",
-    "3.8.0","3.8.1","3.8.2","3.8.3","3.8.4","3.8.5","3.8.6","3.8.7","3.8.8","3.8.9","3.8.10",
-    "3.7.0","3.7.1","3.7.2","3.7.3","3.7.4","3.7.5","3.7.6","3.7.7","3.7.8","3.7.9",
-    "3.6.0","3.6.1","3.6.2","3.6.3","3.6.4","3.6.5","3.6.6","3.6.7","3.6.8",
-    "3.5.0","3.5.1","3.5.2","3.5.3","3.5.4",
-]
-MIRROR_PYTHODOWLOADER = [
-    #https://registry.npmmirror.com/-/binary/python/3.10.0
-    #https://registry.npmmirror.com/-/binary/python/3.10.0/python-3.10.0-amd64.exe
-    "python.org",
-    "registry.npmmirror.com(China)"
-]
-PYTHONTOOL_DOWNLAOD = [
-    "github.io",
-    "github.com",
-    "ghp.ci"
-]
 
+
+def python_version_reload():
+    def thread():
+        url=f"https://www.python.org/ftp/python/"
+        version_reload.config(text="Reloading...",state="disabled")
+        try:
+            with requests.get(url,verify=False) as r:
+                bs = BeautifulSoup(r.content, "lxml")
+                results = []
+                for i in bs.find_all("a"):
+                    if i.text[0].isnumeric():
+                        results.append(i.text[:-1])
+                if results:
+                    version_reload.config(text="Sorting...")
+                    sort_results(results)
+        except Exception as e:
+            logging.error(f"Python Version Reload Wrong:{e}")
+    threadings=threading.Thread(target=thread)
+    threadings.start()
+class Version:
+    def __init__(self, version_str: str):
+        self.version = version_str.split('.')
+        while len(self.version) < 3:
+            self.version.append('0')
+
+    def __lt__(self, other):
+        for i in range(3):
+            if (v1 := int(self.version[i])) < (v2 := int(other.version[i])):
+                return True
+            elif v1 > v2:
+                return False
+        else:
+            return False
+def sort_results(results: list):
+    _results = results.copy()
+    length = len(_results)
+    for i in range(length):
+        for ii in range(0, length - i - 1):
+            v1 = Version(_results[ii])
+            v2 = Version(_results[ii + 1])
+            if v1 < v2:
+                _results[ii], _results[ii + 1] = _results[ii + 1], _results[ii]
+    version_combobox.configure(values=_results)
+    version_reload.config(text="Reload",state="normal")
 
 def check_python_installation(delay=3000):
     """
@@ -71,46 +95,6 @@ def check_python_installation(delay=3000):
         status_label.config(text=str(e))
         root.after(delay, clear_a)
 
-def sav_ver():
-    """
-    保存用户选择的Python版本信息到文件。
-    """
-    try:
-        # 获取用户主目录
-        user_home = os.path.expanduser("~")
-
-        # 获取用户选择的版本
-        selected_version = version_combobox.get()
-
-        # 构建保存文件的完整路径
-        save_file_path = os.path.join(user_home, "pt_saved", "version.txt")
-
-        # 确保保存目录存在
-        os.makedirs(os.path.dirname(save_file_path), exist_ok=True)
-
-        # 写入版本信息到文件
-        with open(save_file_path, "w") as file:
-            file.write(selected_version)
-    except OSError as e:
-        # 捕获并打印文件操作异常
-        logging.error(f"File operation error: {e}", exc_info=True)
-        messagebox.showerror("Error", f"File operation error: {e}")
-    except Exception as e:
-        # 捕获并打印其他异常
-        logging.error(f"Unknown error   : {e}", exc_info=True)
-        messagebox.showerror("Error"    , f"Unknown error: {e}")
-
-
-def refresh_versions(x):
-    while True:
-        sav_ver()
-        time.sleep(x)
-
-# 启动版本刷新线程
-
-
-# 主线程可以继续执行其他任务
-print("Version refreshing started in the background.")
 def clear_a():
     status_label.config(text="")
 def clear_b():
@@ -578,78 +562,8 @@ def uninstall_package():
         status_label.config(text=f"Error: {str(e)}")
         root.after(3000,clear_a)
     uninstall_button.config(state="enabled")
-def load():
-    user_name = getpass.getuser() 
-    if os.path.exists(f"/Users/{user_name}/pt_saved/proxy.txt"):
-        with open(f"/Users/{user_name}/pt_saved/proxy.txt","r") as re:
-            ree=re.readlines()
-            reee=len(ree)
-            for i in range(reee):
-                if "address:" in ree[i]:
-                    add=ree[i].split(":")
-                    addlen=len(add)
-                    address=add[addlen-1]
-                    address=address.strip()
-                    address_entry.insert(0,address)
-                if "port" in ree[i]:
-                    poo=ree[i].split(":")
-                    poolen=len(poo)
-                    port=poo[poolen-1]
-                    port=port.strip()
-                    port_entry.insert(0,port)
-    else:
-        address_entry.insert(0,"")
-        port_entry.insert(0,"")
-def save():
-    address=address_entry.get()
-    port=port_entry.get()
-    try:
-        user_name = getpass.getuser() 
-        if os.path.exists(f"/Users/{user_name}/pt_saved/proxy.txt"):
-            os.remove(f"/Users/{user_name}/pt_saved/proxy.txt")
-        if os.path.exists(f"/Users/{user_name}/pt_saved/")==False:
-            os.mkdir(f"/Users/{user_name}/pt_saved/")
-        with open(f"/Users/{user_name}/pt_saved/proxy.txt","w")as wr:
-            wr.write(f"address:{address}\n")
-            wr.write(f"port:{port}\n")
-            sav_label.config(text="Proxy settings has been saved successfully!")
-            root.after(1000,clear_b)
-    except Exception as e:
-        sav_label.config(text=f"Error: Cannot save proxy settings {str(e)}")
-        root.after(1000,clear_b)
-def load_com():
-    #f"/Users/{user_name}/pt_saved/"
-    try:
-        user_name = getpass.getuser()
-        version_len=len(VERSIONS)
-        with open(f"/Users/{user_name}/pt_saved/version.txt","r") as r:
-            re=r.read()
-        for i in range(version_len):
-            if re in VERSIONS[i]:
-                return int(i)
-    except Exception:
-        return 0
-user_name = getpass.getuser()
 
-def switch_theme():
-    user_name = getpass.getuser()
 
-    if switch.get():
-        sv_ttk.set_theme("dark")
-        if os.path.exists(f"/Users/{user_name}/pt_saved/") == False:
-            os.mkdir(f"/Users/{user_name}/pt_saved/")
-        if os.path.exists(f"/Users/{user_name}/pt_saved/theme/") == False:
-            os.mkdir(f"/Users/{user_name}/pt_saved/theme")
-        with open(f"/Users/{user_name}/pt_saved/theme/theme.txt", "w") as a:
-            a.write("dark")
-    else:
-        sv_ttk.set_theme("light")
-        if os.path.exists(f"/Users/{user_name}/pt_saved/") == False:
-            os.mkdir(f"/Users/{user_name}/pt_saved/")
-        if os.path.exists(f"/Users/{user_name}/pt_saved/theme/") == False:
-            os.mkdir(f"/Users/{user_name}/pt_saved/theme")
-        with open(f"/Users/{user_name}/pt_saved/theme/theme.txt", "w") as a:
-            a.write("light")
 
 
 def load_theme():
@@ -658,10 +572,8 @@ def load_theme():
         with open(f"/Users/{user_name}/pt_saved/theme/theme.txt", "r") as r:
             theme = r.read()
         if theme == "dark":
-            switch.set(True)
             sv_ttk.set_theme("dark")
         elif theme == "light":
-            switch.set(False)
             sv_ttk.set_theme("light")
     except Exception:
         sv_ttk.set_theme("light")
@@ -671,6 +583,114 @@ def show_about():
         messagebox.showwarning("About", f"Version: dev\nBuild: 1927\n{time_lim} days left.")
     else:
         messagebox.showinfo("About", f"Version: dev\nBuild: 1927\n{time_lim} days left.")
+def Settings():
+    def load():
+        user_name = getpass.getuser() 
+        if os.path.exists(f"/Users/{user_name}/pt_saved/proxy.txt"):
+            with open(f"/Users/{user_name}/pt_saved/proxy.txt","r") as re:
+                ree=re.readlines()
+                reee=len(ree)
+                for i in range(reee):
+                    if "address:" in ree[i]:
+                        add=ree[i].split(":")
+                        addlen=len(add)
+                        address=add[addlen-1]
+                        address=address.strip()
+                        address_entry.insert(0,address)
+                    if "port" in ree[i]:
+                        poo=ree[i].split(":")
+                        poolen=len(poo)
+                        port=poo[poolen-1]
+                        port=port.strip()
+                        port_entry.insert(0,port)
+        else:
+            address_entry.insert(0,"")
+            port_entry.insert(0,"")
+    def save():
+        address=address_entry.get()
+        port=port_entry.get()
+        try:
+            user_name = getpass.getuser() 
+            if os.path.exists(f"/Users/{user_name}/pt_saved/proxy.txt"):
+                os.remove(f"/Users/{user_name}/pt_saved/proxy.txt")
+            if os.path.exists(f"/Users/{user_name}/pt_saved/")==False:
+                os.mkdir(f"/Users/{user_name}/pt_saved/")
+            with open(f"/Users/{user_name}/pt_saved/proxy.txt","w")as wr:
+                wr.write(f"address:{address}\n")
+                wr.write(f"port:{port}\n")
+                sav_label.config(text="Proxy settings has been saved successfully!")
+                root.after(1000,clear_b)
+        except Exception as e:
+            sav_label.config(text=f"Error: Cannot save proxy settings {str(e)}")
+            root.after(1000,clear_b)
+    def switch_theme():
+        user_name = getpass.getuser()
+
+        if switch.get():
+            sv_ttk.set_theme("dark")
+            if os.path.exists(f"/Users/{user_name}/pt_saved/") == False:
+                os.mkdir(f"/Users/{user_name}/pt_saved/")
+            if os.path.exists(f"/Users/{user_name}/pt_saved/theme/") == False:
+                os.mkdir(f"/Users/{user_name}/pt_saved/theme")
+            with open(f"/Users/{user_name}/pt_saved/theme/theme.txt", "w") as a:
+                a.write("dark")
+        else:
+            sv_ttk.set_theme("light")
+            if os.path.exists(f"/Users/{user_name}/pt_saved/") == False:
+                os.mkdir(f"/Users/{user_name}/pt_saved/")
+            if os.path.exists(f"/Users/{user_name}/pt_saved/theme/") == False:
+                os.mkdir(f"/Users/{user_name}/pt_saved/theme")
+            with open(f"/Users/{user_name}/pt_saved/theme/theme.txt", "w") as a:
+                a.write("light")
+    def load_theme():
+        try:
+            user_name = getpass.getuser()
+            with open(f"/Users/{user_name}/pt_saved/theme/theme.txt", "r") as r:
+                theme = r.read()
+            if theme == "dark":
+                switch.set(True)
+                sv_ttk.set_theme("dark")
+            elif theme == "light":
+                switch.set(False)
+                sv_ttk.set_theme("light")
+        except Exception:
+            sv_ttk.set_theme("light")
+    #SETTINGS TAB
+    window = tk.Toplevel(root)
+    window.title("Settings")
+    control = ttk.Notebook(window)
+
+    switch= ttk.Frame(window, padding="20")
+    switch_tab = ttk.Frame(switch)
+    switch_tab.pack(padx=20, pady=20)
+    control.add(switch_tab,text="Switch Theme")
+    control.grid(row=0,column=0,padx=10,pady=10)
+    
+
+    switch = tk.BooleanVar()  # 创建一个BooleanVar变量，用于检测复选框状态
+    themes = ttk.Checkbutton(switch_tab, text="dark mode", variable=switch, style="Switch.TCheckbutton",command=switch_theme)
+    themes.grid(row=5,column=0,padx=10,pady=10,columnspan=3)
+    sav_label = ttk.Label(switch_tab, text="")
+    sav_label.grid(row=7, column=0,columnspan=3)
+
+
+    address=ttk.Label(switch_tab,text="Address:")
+    address.grid(row=1,column=0,padx=10,pady=10)
+
+    address_entry=ttk.Entry(switch_tab,width=15)
+    address_entry.grid(row=1,column=1,columnspan=2,pady=10)
+
+    port=ttk.Label(switch_tab,text="Port:")
+    port.grid(row=2,column=0,padx=0,pady=10)
+
+    port_entry=ttk.Entry(switch_tab,width=5)
+    port_entry.grid(row=2,column=1,pady=10,columnspan=2)
+
+    sav=ttk.Button(switch_tab,text="Apply",command=save)
+    sav.grid(row=3,column=0,padx=10,pady=10,columnspan=3)
+
+
+    
 #GUI
 if __name__ == "__main__":
     #启动laugh = True
@@ -698,7 +718,9 @@ if __name__ == "__main__":
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
     help_menu = tk.Menu(menu_bar, tearoff=0)
-
+    settings_menu = tk.Menu(menu_bar, tearoff=0)
+    menu_bar.add_cascade(label="Settings", menu=settings_menu)
+    settings_menu.add_command(label="Settings")
     menu_bar.add_cascade(label="Help", menu=help_menu)
     help_menu.add_command(label="About", command=show_about)
     help_menu.add_separator()
@@ -714,10 +736,11 @@ if __name__ == "__main__":
     version_label = ttk.Label(framea_tab, text="Select Python Version:")
     version_label.grid(row=0, column=0, pady=10)
     selected_version = tk.StringVar()
-    version_combobox = ttk.Combobox(framea_tab, textvariable=selected_version, values=VERSIONS, state="read")
+    version_combobox = ttk.Combobox(framea_tab, textvariable=selected_version, values=[], state="read")
     version_combobox.grid(row=0, column=1, pady=10)
-    ins=load_com()
-    version_combobox.current(ins)
+    version_reload=ttk.Button(framea_tab,text="Reload",command=python_version_reload)
+    version_reload.grid(row=0,column=2,pady=10)
+    #version_combobox.current(0)
     #SAVE PATH
     destination_label = ttk.Label(framea_tab, text="Select Destination:")
     destination_label.grid(row=1, column=0, pady=10)
@@ -757,65 +780,10 @@ if __name__ == "__main__":
     status_label = ttk.Label(framea_tab, text="", padding="10")
     status_label.grid(row=10, column=0, columnspan=3)
 
-    #SETTINGS TAB
-    fsetting = ttk.Frame(root, padding="20")
-    tab_control.add(fsetting,text="Settings")
-    tab_control.pack(expand=1, fill='both', padx=10, pady=10)
-    frameb_tab = ttk.Frame(fsetting)
-    frameb_tab.pack(padx=20, pady=20)
-
-    address=ttk.Label(frameb_tab,text="Address:")
-    address.grid(row=1,column=0,padx=10,pady=10)
-
-    address_entry=ttk.Entry(frameb_tab,width=15)
-    address_entry.grid(row=1,column=1,columnspan=2,pady=10)
-
-    port=ttk.Label(frameb_tab,text="Port:")
-    port.grid(row=2,column=0,padx=0,pady=10)
-
-    port_entry=ttk.Entry(frameb_tab,width=5)
-    port_entry.grid(row=2,column=1,pady=10,columnspan=2)
-
-    sav=ttk.Button(frameb_tab,text="Apply",command=save)
-    sav.grid(row=3,column=0,padx=10,pady=10,columnspan=3)
-
-
-    switch = tk.BooleanVar()  # 创建一个BooleanVar变量，用于检测复选框状态
-    themes = ttk.Checkbutton(frameb_tab, text="dark mode", variable=switch, style="Switch.TCheckbutton",command=switch_theme)
-    themes.grid(row=5,column=0,padx=10,pady=10,columnspan=3)
-    def allow_refresh_base():
-        if (refresh.get() == False):
-            refresh_entry.config(state=tk.DISABLED)
-        if (refresh.get()==True):
-            refresh_entry.config(state="enabled")
-    def allow_refresh():
-        if(refresh.get() and refresh_entry.get().isdigit()):
-            ind = float(refresh_entry.get())
-            if(ind!=None or ind > 0):
-                while True:
-                    threading.Thread(target=refresh_versions,args=(ind,)).start()
-                    time.sleep(ind)
-    def allow_refresh_thread():
-        while True:
-            if(refresh.get() and refresh_entry.get().isdigit()):
-                threading.Thread(target=allow_refresh,daemon=True).start()
-                break
-            else:
-                time.sleep(1)
-                continue
-    refresh=tk.BooleanVar()
-    refresh_button=ttk.Checkbutton(frameb_tab,text="refresh-python-versions(BETA)",variable=refresh,onvalue=True,offvalue=False,command=allow_refresh_base)
-    refresh_button.grid(row=6,column=0,padx=10,pady=10,columnspan=3)
-    reentry=tk.StringVar()
-    refresh_entry=ttk.Entry(frameb_tab,width=10)
-    refresh_entry.grid(row=6,column=4,pady=10,columnspan=2)
-    sav_label = ttk.Label(frameb_tab, text="")
-    sav_label.grid(row=7, column=0,columnspan=3)
+    
     #update(not available)
-    threading.Thread(target=allow_refresh_thread,daemon=True).start()
-
-    load()
     load_theme()
+
     # Set sv_ttk theme
     update_pip_button_text()
     check_python_installation()
