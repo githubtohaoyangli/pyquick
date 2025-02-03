@@ -732,10 +732,10 @@ if __name__ == "__main__":
     cancel_download_button.grid(row=3, column=0, columnspan=3, pady=10)
     threads_label = ttk.Label(framea_tab, text="Number of Threads:")
     threads_label.grid(row=4, column=0, pady=10)
-
-    threads_entry = ttk.Entry(framea_tab, width=10)
+    threads = tk.IntVar()
+    threads_entry = ttk.Combobox(framea_tab, width=10,textvariable=threads,vaules=[int for i in range(1, 129)],state="readonly")
     threads_entry.grid(row=4, column=1, pady=10)
-    threads_entry.insert(0, "8")
+    threads_entry.current(7)
     #PIP(UPDRADE)
     pip_upgrade_button = ttk.Button(framea_tab, text="Pip Version: Checking...", command=upgrade_pip)
     pip_upgrade_button.grid(row=5, column=0, columnspan=3, pady=20)
