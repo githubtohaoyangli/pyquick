@@ -9,7 +9,7 @@ import shutil
 import re
 import time
 from save_path import create_folder,sav_path
-
+requests.packages.urllib3.disable_warnings()
 import sv_ttk
 import shlex
 import logging
@@ -42,18 +42,22 @@ def python_version_reload():
 def python_file_reload():
     r1=r'\S+/'
     def thread():
-        ver=version_combobox.get()
-        if ver!="":
-            url=f"https://www.python.org/ftp/python/{ver}/"
+        ver1=version_combobox.get()
+        if ver1!="":
+            url=f"https://www.python.org/ftp/python/{ver1}/"
         else:
             return
         with requests.get(url,verify=False) as r:
             bs = BeautifulSoup(r.content, "lxml")
             results = []
             for i in bs.find_all("a"):
-                if(re.match(r1,i.text)==None) and(".exe" not in i.text) and("-embed-"not in i.text):
-                    results.append(i.text[:-1])
-        choose_file_combobox.configure(values=results)
+                if (re.match(r1,i.text)==None) and (i.text[-1]!="/") and(".exe" not in i.text) and("-embed-"not in i.text):
+                    results.append(i.text)
+        ver2=version_combobox.get()
+        if ver1==ver2:
+            choose_file_combobox.configure(values=results)
+        else:
+            choose_file_combobox.configure(values=[])
     while True:
         threading.Thread(target=thread).start()
         time.sleep(0.3)
@@ -129,8 +133,20 @@ def select_destination():
     if destination_path:
         destination_entry.delete(0, tk.END)
         destination_entry.insert(0, destination_path)
-
-
+def disable_download():
+    version_combobox.config(state="disabled")
+    choose_file_combobox.config(state="disabled")
+    destination_entry.config(state="disabled")
+    threads_entry.config(state="disabled")
+    download_button.config(state="disabled")
+    
+def enable_download():
+    version_combobox.config(state="readonly")
+    choose_file_combobox.config(state="readonly")
+    destination_entry.config(state="normal")
+    threads_entry.config(state="readonly")
+    download_button.config(state="normal")
+    cancel_download_button.config(state="disabled")
     
 def download_chunk(url, start, end, destination, chunk_size=1024 * 100):
     headers = {
@@ -146,18 +162,18 @@ def download_chunk(url, start, end, destination, chunk_size=1024 * 100):
             yield len(data)
 
 def download_file(destination_path, num_threads=8):
-    global executor
+    global executor,is_downloading
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36'
     }
     filename=choose_file_combobox.get()
     ver=version_combobox.get()
-    url = f"https://www.python.org/ftp/python/{ver}/{filename}/"
-    file_name = url.split("/")[-1]
+    url = f"https://www.python.org/ftp/python/{ver}/{filename}"
+    file_name = filename
     destination = os.path.join(destination_path, file_name)
     if os.path.exists(destination):
         os.remove(destination)
-    download_button.config(state="disabled")
+    disable_download()
     for attempt in range(3):
         try:
             response = requests.head(url, headers=headers)
@@ -166,58 +182,65 @@ def download_file(destination_path, num_threads=8):
             chunk_size = file_size // num_threads
             with open(destination, "wb") as file:
                 file.truncate(file_size)
+            cancel_download_button.config(state="normal")
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
+                is_downloading = True
                 futures = []
                 for i in range(num_threads):
                     start = i * chunk_size
                     end = start + chunk_size - 1 if i < num_threads - 1 else file_size - 1
                     futures.append(executor.submit(download_chunk, url, start, end, destination, chunk_size))
-
                 downloaded = 0
                 for future in as_completed(futures):
                     for chunk_size in future.result():
+                        def update_progress(downloaded,file_size):
+                            percentage = (downloaded / file_size) * 100
                         downloaded += chunk_size
                         percentage = (downloaded / file_size) * 100
                         downloaded_mb = downloaded / (1024 * 1024)
                         status_label.config(
-                            text=f"Downloading: {percentage:.3f}% | {downloaded_mb:.3f} MB | {file_size / (1024 * 1024):.3f} MB ｜ ")
+                            text=f"Downloading: {percentage:.3f}% | {downloaded_mb:.3f} MB | {file_size / (1024 * 1024):.3f} MB")
                         status_label.update()
                         download_pb["value"] = percentage
                         download_pb.update()
 
             status_label.config(text="Download Complete!")
+            is_downloading = False
             root.after(3000, clear_a)
-            cancel_download_button.config(state="disabled")
-            download_button.config(state="normal")
+            enable_download()
             break
         except Exception as e:
             status_label.config(text=f"Download Failed: {str(e)}. Retrying...")
             time.sleep(2)
     else:
         status_label.config(text="Download Failed after 3 attempts.")
+        is_downloading = False
         root.after(3000, clear_a)
-        cancel_download_button.config(state="disabled")
-        download_button.config(state="normal")
+        enable_download()
 
 def cancel_download():
-    global executor
-    cancel_event.set()
-    executor.shutdown(wait=False)
-    status_label.config(text="Cancelling download...")
-    download_pb['value'] = 0  # 重置进度条
+    global executor,is_downloading
+    if is_downloading:
+        cancel_event.set()
+        executor.shutdown(wait=False)
+        status_label.config(text="Cancelling download...")
+        download_pb['value'] = 0  # 重置进度条
 
-    destination_path = destination_entry.get()
-    filename=choose_file_combobox.get()
-    file_name = filename
-    destination = os.path.join(destination_path, file_name)
+        destination_path = destination_entry.get()
+        filename=choose_file_combobox.get()
+        file_name = filename
+        destination = os.path.join(destination_path, file_name)
+        is_downloading = False
+        cancel_download_button.config(state="disabled")
+        
 
     if os.path.exists(destination):
         os.remove(destination)
         status_label.config(text="Download cancelled and incomplete file removed.")
-        download_button.config(state="normal")
+        enable_download()
     else:
         status_label.config(text="Download cancelled.")
-        download_button.config(state="normal")
+        enable_download()
     root.after(3000, clear_a)
 
 
@@ -229,9 +252,11 @@ def download_selected_version():
         status_label.config(text="Invalid path!")
         root.after(2000, clear_a)
         return
-
+    if choose_file_combobox.get()=="":
+        status_label.config(text="Please select a file to download!")
+        root.after(2000, clear_a)
+        return
     cancel_event.clear()
-    cancel_download_button.config(state="enabled")
     down_thread = threading.Thread(target=download_file, args=(destination_path, num_threads), daemon=True)
     down_thread.start()
 
@@ -355,9 +380,78 @@ def show_about():
         messagebox.showwarning("About", f"Version: dev\nBuild: 1960\n{time_lim} days left.")
     else:
         messagebox.showinfo("About", f"Version: dev\nBuild: 1960\n{time_lim} days left.")
+def load_theme():
+    try:
+        theme=sav_path.read_path(config_path,"theme.txt","readline")
+        if theme=="light":
+            sv_ttk.set_theme("light")
+        elif theme=="dark":
+            sv_ttk.set_theme("dark")
+        else:
+            sv_ttk.set_theme("light")
+    except FileNotFoundError:
+        sv_ttk.set_theme("light")
+    except Exception as e:
+        sv_ttk.set_theme("light")
+def save_theme():
+    theme=sv_ttk.get_theme()
+    sav_path.save_path(config_path,"theme.txt","w",theme)
+def settings():
+    def load_theme():
+        try:
+            theme=sav_path.read_path(config_path,"theme.txt","readline")
+            if theme=="light":
+                sv_ttk.set_theme("light")
+                switch.set(0)
+            elif theme=="dark":
+                sv_ttk.set_theme("dark")
+                switch.set(1)
+            else:
+                sv_ttk.set_theme("light")
+                switch.set(0)
+        except FileNotFoundError:
+            sv_ttk.set_theme("light")
+            switch.set(0)
+        except Exception as e:
+            sv_ttk.set_theme("light")
+            switch.set(0)
+    def switch_theme():
+        if switch.get():
+            sv_ttk.set_theme("dark")
+            sav_path.save_path(config_path,"theme.txt","w","dark")
+        else:
+            sv_ttk.set_theme("light")
+            sav_path.save_path(config_path,"theme.txt","w","light")
+    window=tk.Toplevel(root)
+    window.title("Settings")
+    window.resizable(False,False)
+    window.protocol("WM_DELETE_WINDOW", lambda: window.destroy())
+    
+    control = ttk.Notebook(window)
+    ftheme= ttk.Frame(window, padding="20")
+    proxy=ttk.Frame(window, padding="20")
+    control.add(ftheme,text="Switch Theme")
+    control.grid(row=0, padx=5, pady=5)
+    control.add(proxy,text="Proxy")
+    control.grid(row=0, padx=5, pady=5)
 
-    
-    
+    theme_tab=ttk.Frame(ftheme)
+    theme_tab.grid(row=0,column=0,padx=5, pady=5)
+    proxy_tab=ttk.Frame(proxy)
+    proxy_tab.grid(row=0,column=0,padx=5, pady=5)
+
+    switch=tk.BooleanVar()
+    sw_theme=ttk.Checkbutton(theme_tab,text="Switch Theme",variable=switch,command=switch_theme,style="Switch.TCheckbutton")
+    sw_theme.grid(row=0,column=0,padx=20, pady=20)
+    load_theme()
+def on_closing():
+    save_theme()
+    root.destroy()
+    exit(0)
+    subprocess.Popen("killall Python",text=True,shell=True)
+    subprocess.Popen("killall pyquick",text=True,shell=True)
+    subprocess.Popen("killall Pyquick",text=True,shell=True)
+
 #GUI
 if __name__ == "__main__":
     #启动laugh = True
@@ -369,12 +463,13 @@ if __name__ == "__main__":
     
     root = tk.Tk()
     root.title("Pyquick")
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
     help_menu = tk.Menu(menu_bar, tearoff=0)
     settings_menu = tk.Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="Settings", menu=settings_menu)
-    settings_menu.add_command(label="Settings")
+    settings_menu.add_command(label="Settings",command=settings)
     menu_bar.add_cascade(label="Help", menu=help_menu)
     help_menu.add_command(label="About", command=show_about)
     help_menu.add_separator()
@@ -399,54 +494,54 @@ if __name__ == "__main__":
 
     #PYTHON VERSION
     version_label = ttk.Label(framea_tab, text="Select Python Version:")
-    version_label.grid(row=0, column=0, pady=10, padx=10)
+    version_label.grid(row=0, column=0, pady=20, padx=20)
 
 
     selected_version = tk.StringVar()
     version_combobox = ttk.Combobox(framea_tab, textvariable=selected_version, values=[], state="read")
-    version_combobox.grid(row=0, column=1, pady=10, padx=10)
+    version_combobox.grid(row=0, column=1, pady=20, padx=20)
     version_reload=ttk.Button(framea_tab,text="Reload",command=python_version_reload)
-    version_reload.grid(row=0,column=2,pady=10, padx=10)
+    version_reload.grid(row=0,column=2, pady=20, padx=20)
 
 
     
     
 
     destination_label = ttk.Label(framea_tab, text="Select Destination:")
-    destination_label.grid(row=1, column=0, pady=10, padx=10)
+    destination_label.grid(row=1, column=0, pady=20, padx=20)
 
     destination_entry = ttk.Entry(framea_tab, width=50)
-    destination_entry.grid(row=1, column=1, pady=10, padx=10)
+    destination_entry.grid(row=1, column=1, pady=20, padx=20)
 
     select_button = ttk.Button(framea_tab, text="Select", command=select_destination)
-    select_button.grid(row=1, column=2, pady=10,padx=10)
+    select_button.grid(row=1, column=2, pady=20, padx=20)
 
     threads_label = ttk.Label(framea_tab, text="Number of Threads:")
-    threads_label.grid(row=2, column=0, pady=10, padx=10)
+    threads_label.grid(row=2, column=0, pady=20, padx=20)
 
     threads = tk.IntVar()
     threads_entry = ttk.Combobox(framea_tab, width=10,textvariable=threads,values=[str(i) for i in range(1, 129)],state="readonly")
-    threads_entry.grid(row=2, column=1, pady=10, padx=10)
+    threads_entry.grid(row=2, column=1, pady=20, padx=20)
     threads_entry.current(7)
 
     choose_label=ttk.Label(framea_tab,text="Choose a File:")
-    choose_label.grid(row=3,column=0,pady=10,padx=10)
+    choose_label.grid(row=3,column=0, pady=20, padx=20)
     choose_file=tk.StringVar()
     choose_file_combobox=ttk.Combobox(framea_tab,textvariable=choose_file,values=[],state="readonly",width=50)
-    choose_file_combobox.grid(row=3,column=1,columnspan=3,pady=10,padx=10)
+    choose_file_combobox.grid(row=3,column=1,columnspan=3, pady=20, padx=20)
     #DOWNLOAD
     download_button = ttk.Button(framea_tab, text="Download Selected Version", command=download_selected_version)
-    download_button.grid(row=4, column=0, columnspan=5, pady=10, padx=10)
+    download_button.grid(row=4, column=0, columnspan=5, pady=20, padx=20)
 
     cancel_download_button = ttk.Button(framea_tab, text="Cancel Download", command=cancel_download, state="disabled")
-    cancel_download_button.grid(row=5, column=0, columnspan=3, pady=10, padx=10)
+    cancel_download_button.grid(row=5, column=0, columnspan=3, pady=20, padx=20)
 
     
     download_pb=ttk.Progressbar(framea_tab,length=500,mode="determinate")
-    download_pb.grid(row=6,column=0,pady=10,columnspan=3, padx=10)
+    download_pb.grid(row=6,column=0,pady=20,columnspan=3, padx=20)
     
     status_label = ttk.Label(framea_tab, text="", padding="10")
-    status_label.grid(row=7, column=0, columnspan=3, pady=10, padx=10)
+    status_label.grid(row=7, column=0, columnspan=3, pady=20, padx=20)
 
     #PIP(UPDRADE)
     pip_upgrade_button = ttk.Button(settings_tab, text="Upgrade pip",command=upgrade_pip)
@@ -477,7 +572,7 @@ if __name__ == "__main__":
     threading.Thread(target=python_file_reload, daemon=True).start()
     check_python_installation()
     threading.Thread(target=read_python_list, daemon=True).start()
-    sv_ttk.set_theme("dark")
     root.resizable(False,False)
+    load_theme()
     root.mainloop()
     #root.after(3000,)
