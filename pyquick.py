@@ -21,8 +21,11 @@ config_path=create_folder.get_path("pyquick","1960")
 cancel_event = threading.Event()
 create_folder.folder_create("pyquick","1960")
 def python_version_reload():
+    global is_reloading
     def thread():
+        global is_reloading
         url=f"https://www.python.org/ftp/python/"
+        is_reloading=True
         version_reload.config(text="Reloading...",state="disabled")
         try:
             with requests.get(url,verify=False) as r:
@@ -33,7 +36,7 @@ def python_version_reload():
                         results.append(i.text[:-1])
                 if results:
                     version_reload.config(text="Sorting...")
-                    
+                    is_reloading=False
                     sort_results(results)
         except Exception as e:
             logging.error(f"Python Version Reload Wrong:{e}")
@@ -44,7 +47,7 @@ def python_file_reload():
     def thread():
         ver1=version_combobox.get()
         if ver1!="":
-            url=f"https://www.python.org/ftp/python/{ver1}/"
+            url=f"https://www.python.org/ftp/python/{ver1}"
         else:
             return
         with requests.get(url,verify=False) as r:
@@ -84,18 +87,7 @@ class Version:
                 return False
         else:
             return False
-def sort_results(results: list):
-    _results = results.copy()
-    length = len(_results)
-    for i in range(length):
-        for ii in range(0, length - i - 1):
-            v1 = Version(_results[ii])
-            v2 = Version(_results[ii + 1])
-            if v1 < v2:
-                _results[ii], _results[ii + 1] = _results[ii + 1], _results[ii]
-    version_combobox.configure(values=_results)
-    sav_path.save_path(config_path,"python_version_list.txt","w",_results)
-    version_reload.config(text="Reload",state="normal")
+
 
 def check_python_installation(delay=3000):
     """
@@ -128,112 +120,286 @@ def check_python_installation(delay=3000):
 def clear_a():
     status_label.config(text="")
     package_label.config(text="")
+    download_pb['value'] = 0  # 重置进度条
 def select_destination():
     destination_path = filedialog.askdirectory()
     if destination_path:
         destination_entry.delete(0, tk.END)
         destination_entry.insert(0, destination_path)
+# 全局变量
+file_size = 0
+executor: ThreadPoolExecutor
+futures = []
+lock = threading.Lock()
+downloaded_bytes = [0]
+is_downloading = False
+def validate_path(path):
+    """
+    验证路径是否存在
+
+    参数:
+    path (str): 需要验证的路径
+
+    返回:
+    bool: 如果路径存在返回True，否则返回False
+    """
+    return os.path.isdir(path)
+def validate_version(version):
+    """
+    验证版本号格式是否符合预期的格式
+
+    此函数通过正则表达式检查传入的版本号是否符合 major.minor.patch 的格式，
+    其中 major、minor 和 patch 都是数字
+
+    参数:
+    version (str): 需要验证的版本号字符串
+
+    返回:
+    bool: 如果版本号符合预期格式，则返回 True，否则返回 False
+    """
+    # 定义版本号的正则表达式模式，确保版本号是 major.minor.patch 的格式
+    pattern = r'^\d+\.\d+\.\d+$'
+    patten2=r'^\d+\.\d+$'
+    # 使用正则表达式匹配版本号，返回匹配结果的布尔值
+    if re.match(patten2,version):
+        return True
+    return bool(re.match(pattern, version))
+def download_chunk(url, start_byte, end_byte, destination, retries=3):
+    """
+    下载文件的指定部分
+
+    :param url: 文件的URL
+    :param start_byte: 开始下载的字节位置
+    :param end_byte: 结束下载的字节位置
+    :param destination: 文件保存的目标路径
+    :param retries: 最大重试次数,默认为3次
+    :return: 如果下载成功返回True,否则返回False
+    """
+   
+    global is_downloading
+    # 构造请求头，指定下载的字节范围
+    headers = {'Range': f'bytes={start_byte}-{end_byte}'}
+    attempt = 0
+    # 尝试下载文件，如果失败则重试
+    while attempt < retries:
+        if not is_downloading:
+            return False
+        try:
+            # 发起HTTP请求，包含自定义请求头，启用流式响应，设置超时
+            response = requests.get(url, headers=headers, stream=True, timeout=10,verify=False)
+            # 检查响应状态码，如果状态码表示错误，则抛出异常
+            response.raise_for_status()
+            # 使用文件锁确保并发安全，打开文件准备写入
+            with lock:
+                with open(destination, 'r+b') as f:
+                    f.seek(start_byte)
+                    # 遍历响应内容，写入到文件中
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if not is_downloading:
+                            return False
+                        f.write(chunk)
+                        downloaded_bytes[0] += len(chunk)
+            return True
+        except requests.RequestException as e:
+            # 如果发生网络请求异常，更新状态标签并重试
+            with lock:
+                if is_downloading:
+                    status_label.config(text=f"Download Failed! Retrying... ({attempt + 1}/{retries})")
+                    attempt += 1
+                else:
+                    return False
+    # 如果重试次数用尽仍然失败，更新状态标签并设置下载状态为False
+    with lock:
+        status_label.config(text=f"Download Failed! Error: {e}")
+        is_downloading = False
+    return False
 def disable_download():
     version_combobox.config(state="disabled")
     choose_file_combobox.config(state="disabled")
     destination_entry.config(state="disabled")
     threads_entry.config(state="disabled")
+    version_reload.config(state="disabled")
+    select_button.config(state="disabled")
     download_button.config(state="disabled")
     
 def enable_download():
+    global is_reloading
     version_combobox.config(state="readonly")
     choose_file_combobox.config(state="readonly")
     destination_entry.config(state="normal")
     threads_entry.config(state="readonly")
     download_button.config(state="normal")
+    try:
+        if is_reloading:
+            version_reload.config(state="disabled")
+        else:
+            version_reload.config(state="normal")
+    except:
+        version_reload.config(state="normal")
+    select_button.config(state="normal")
     cancel_download_button.config(state="disabled")
     
-def download_chunk(url, start, end, destination, chunk_size=1024 * 100):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36',
-        'Range': f'bytes={start}-{end}'
-    }
-    
-    response = requests.get(url, headers=headers, stream=True)
-    with open(destination, "r+b") as file:
-        file.seek(start)
-        for data in response.iter_content(chunk_size=chunk_size):
-            file.write(data)
-            yield len(data)
 
-def download_file(destination_path, num_threads=8):
-    global executor,is_downloading
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36'
-    }
-    filename=choose_file_combobox.get()
-    ver=version_combobox.get()
-    url = f"https://www.python.org/ftp/python/{ver}/{filename}"
-    file_name = filename
-    destination = os.path.join(destination_path, file_name)
-    if os.path.exists(destination):
-        os.remove(destination)
-    disable_download()
-    for attempt in range(3):
-        try:
-            response = requests.head(url, headers=headers)
-            response.raise_for_status()
-            file_size = int(response.headers.get('content-length', 0))
-            chunk_size = file_size // num_threads
-            with open(destination, "wb") as file:
-                file.truncate(file_size)
-            cancel_download_button.config(state="normal")
-            with ThreadPoolExecutor(max_workers=num_threads) as executor:
-                is_downloading = True
-                futures = []
-                for i in range(num_threads):
-                    start = i * chunk_size
-                    end = start + chunk_size - 1 if i < num_threads - 1 else file_size - 1
-                    futures.append(executor.submit(download_chunk, url, start, end, destination, chunk_size))
-                downloaded = 0
-                for future in as_completed(futures):
-                    for chunk_size in future.result():
-                        def update_progress(downloaded,file_size):
-                            percentage = (downloaded / file_size) * 100
-                        downloaded += chunk_size
-                        percentage = (downloaded / file_size) * 100
-                        downloaded_mb = downloaded / (1024 * 1024)
-                        status_label.config(
-                            text=f"Downloading: {percentage:.3f}% | {downloaded_mb:.3f} MB | {file_size / (1024 * 1024):.3f} MB")
-                        status_label.update()
-                        download_pb["value"] = percentage
-                        download_pb.update()
 
-            status_label.config(text="Download Complete!")
-            is_downloading = False
-            root.after(3000, clear_a)
-            enable_download()
-            break
-        except Exception as e:
-            status_label.config(text=f"Download Failed: {str(e)}. Retrying...")
-            time.sleep(2)
-    else:
-        status_label.config(text="Download Failed after 3 attempts.")
-        is_downloading = False
-        root.after(3000, clear_a)
+def download_file(selected_version, destination_path, num_threads):
+    """下载指定版本的Python安装程序"""
+    download_pb.config(mode="indeterminate")
+    download_pb.start(10)
+    cancel_download_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
+    cancel_download_button.config(state="disabled")
+    global file_size, executor, futures, downloaded_bytes, is_downloading, destination, url
+    # 验证版本号是否有效
+    if not validate_version(selected_version):
+        status_label.config(text="Invalid version number")
         enable_download()
+        return
+
+    # 验证目标路径是否有效
+    if not validate_path(destination_path):
+        status_label.config(text="Invalid destination path")
+        enable_download()
+        return
+
+    # 构造文件名和目标路径
+    file_name = choose_file_combobox.get()
+    destination = os.path.join(destination_path, file_name)
+
+    
+        
+    #url = f"{mirror}{selected_version}/{file_name}"
+    url = f"https://www.python.org/ftp/python/{selected_version}/{file_name}"
+
+    # 获取文件大小
+    try:
+        response = requests.head(url, timeout=10,verify=False)
+        response.raise_for_status()
+        file_size = int(response.headers['Content-Length'])
+    except requests.RequestException as e:
+        status_label.config(text=f"Failed to get file size: {str(e)}")
+        enable_download()
+        return
+
+    # 尝试创建目标文件
+    try:
+        with open(destination, 'wb') as f:
+            pass
+    except IOError as e:
+        status_label.config(text=f"Failed to create file: {str(e)}")
+        enable_download()
+        return
+
+    # 计算每个线程下载的数据块大小
+    chunk_size = file_size // num_threads
+    futures = []
+    downloaded_bytes = [0]
+    is_downloading = True
+    max_worker=num_threads
+    # 使用线程池执行下载任务
+    executor = ThreadPoolExecutor(max_workers=max_worker)
+    for i in range(num_threads):
+        if not is_downloading:
+            break
+        start_byte = i * chunk_size
+        end_byte = start_byte + chunk_size - 1 if i != num_threads - 1 else file_size - 1
+
+        def start():
+            futures.append(executor.submit(download_chunk, url, start_byte, end_byte, destination))
+
+        b=threading.Thread(target=start, daemon=True)
+        b.start()
+        b.join()
+    time.sleep(0.2)
+    cancel_download_button.config(state="normal")
+    download_pb.config(mode="determinate")
+    download_pb['value']=0
+    download_pb['maximum']=100
+    # 启动一个线程来更新下载进度
+    a=threading.Thread(target=update_progress, daemon=True)
+    a.start()
+    # 启用取消下载按钮  
+
+
+
+ib=0
+def update_progress():
+    """更新进度条和状态标签
+
+    通过计算已下载字节数与总文件大小的比例来更新进度条和状态标签的文本。
+    此函数在一个单独的线程中运行，以保持UI响应性。
+    """
+    global file_size, is_downloading, url, ib
+    
+    download_pb.config(mode="indeterminate")
+    download_pb.start(10)
+    
+    # 当有任何一个下载任务未完成时，继续更新进度
+    while any(not future.done() for future in futures):
+        # 如果下载状态为False，则停止更新进度
+        if not is_downloading:
+            break
+        
+        #time.sleep(0.2)
+        if ib==0:
+            download_pb.stop()
+            download_pb.config(mode="determinate")
+            download_pb["maximum"]=100
+        # 计算并更新下载进度的百分比
+        ib+=1
+        progress = int(downloaded_bytes[0] / file_size * 100)
+        
+        # 将已下载字节数转换为MB
+        downloaded_mb = downloaded_bytes[0] / (1024 * 1024)
+        downloaded_kb=downloaded_bytes[0] / (1024)
+        download_b=downloaded_bytes[0]
+        # 将总文件大小转换为MB
+        total_mb = file_size / (1024 * 1024)
+        total_kb=file_size / (1024)
+        total_b=file_size
+        if total_mb>=1:
+            download_pb['value']=progress
+            status_label.config(text=f"Progress: {progress}% ({downloaded_mb:.2f} MB / {total_mb:.2f} MB)")
+        elif total_kb>=1 and total_mb<1:
+            download_pb['value']=progress
+            status_label.config(text=f"Progress: {progress}% ({downloaded_kb:.2f} KB / {total_kb:.2f} KB)")
+        else:
+            download_pb['value']=progress
+            status_label.config(text=f"Progress: {progress}% ({download_b} Bytes / {total_b} Bytes)")
+        # 更新进度条的值
+        download_pb['value']=progress
+        # 暂停0.1秒，减少UI更新频率
+        time.sleep(0.1)
+        
+    # 如果下载状态为True，则表示下载已完成
+    if is_downloading:
+        download_pb['value']=100
+        status_label.config(text="Download Complete!")
+        enable_download()
+    # 如果下载状态为False，则表示下载已取消
+    else:
+        status_label.config(text="Download Cancelled!")
+        enable_download()
+    # 将下载状态设置为False，表示下载已完成或已取消
+    is_downloading = False
+    # 禁用取消下载按钮，防止用户在下载已完成或已取消的情况下点击按钮
+    cancel_download_button.grid_forget()
+    root.after(5000,clear_a)  
+
 
 def cancel_download():
     global executor,is_downloading
     if is_downloading:
         cancel_event.set()
-        executor.shutdown(wait=False)
+        for i in range(1000):
+            executor.shutdown(wait=False)
+            is_downloading=False
         status_label.config(text="Cancelling download...")
         download_pb['value'] = 0  # 重置进度条
-
         destination_path = destination_entry.get()
         filename=choose_file_combobox.get()
         file_name = filename
         destination = os.path.join(destination_path, file_name)
         is_downloading = False
         cancel_download_button.config(state="disabled")
-        
-
     if os.path.exists(destination):
         os.remove(destination)
         status_label.config(text="Download cancelled and incomplete file removed.")
@@ -242,23 +408,46 @@ def cancel_download():
         status_label.config(text="Download cancelled.")
         enable_download()
     root.after(3000, clear_a)
-
+def sort_results(results: list):
+    global is_downloading
+    _results = results.copy()
+    length = len(_results)
+    for i in range(length):
+        for ii in range(0, length - i - 1):
+            v1 = Version(_results[ii])
+            v2 = Version(_results[ii + 1])
+            if v1 < v2:
+                _results[ii], _results[ii + 1] = _results[ii + 1], _results[ii]
+    version_combobox.configure(values=_results)
+    sav_path.save_path(config_path,"python_version_list.txt","w",_results)
+    try:
+        if is_downloading:
+            version_reload.config(text="Reload",state="disabled")
+        else:
+            version_reload.config(text="Reload",state="normal")
+    except:
+        version_reload.config(text="Reload",state="normal")
 
 def download_selected_version():
+    """开始下载选定的Python版本"""
+    selected_version = version_combobox.get()
     destination_path = destination_entry.get()
     num_threads = int(threads_entry.get())
 
     if not os.path.exists(destination_path):
         status_label.config(text="Invalid path!")
-        root.after(2000, clear_a)
+        root.after(5000, clear_a)
         return
-    if choose_file_combobox.get()=="":
-        status_label.config(text="Please select a file to download!")
-        root.after(2000, clear_a)
+    if choose_file_combobox.get()==None or choose_file_combobox.get()=="":
+        status_label.config(text="Please choose a file!")
+        root.after(5000,clear_a)
         return
-    cancel_event.clear()
-    down_thread = threading.Thread(target=download_file, args=(destination_path, num_threads), daemon=True)
-    down_thread.start()
+    disable_download()
+    cancel_download_button.config(state="normal")
+
+    clear_a()
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    threading.Thread(target=download_file, args=(selected_version, destination_path, num_threads), daemon=True).start()
 
 def disabled_pip():
     install_button.config(state="disabled")
@@ -445,6 +634,9 @@ def settings():
     sw_theme.grid(row=0,column=0,padx=20, pady=20)
     load_theme()
 def on_closing():
+    global is_downloading
+    if is_downloading:
+        cancel_download()
     save_theme()
     root.destroy()
     exit(0)
