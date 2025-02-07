@@ -237,7 +237,7 @@ def enable_download():
     except:
         version_reload.config(state="normal")
     select_button.config(state="normal")
-    cancel_download_button.config(state="disabled")
+    cancel_download_button.grid_forget()
     
 
 
@@ -245,7 +245,7 @@ def download_file(selected_version, destination_path, num_threads):
     """下载指定版本的Python安装程序"""
     download_pb.config(mode="indeterminate")
     download_pb.start(10)
-    cancel_download_button.grid(row=5, column=0, columnspan=3, pady=10, padx=5)
+    cancel_download_button.grid(row=5, column=0, columnspan=3, pady=20, padx=20)
     cancel_download_button.config(state="disabled")
     global file_size, executor, futures, downloaded_bytes, is_downloading, destination, url
     # 验证版本号是否有效
@@ -320,17 +320,18 @@ def download_file(selected_version, destination_path, num_threads):
 
 
 
-ib=0
+
 def update_progress():
     """更新进度条和状态标签
-
+    ib=0
     通过计算已下载字节数与总文件大小的比例来更新进度条和状态标签的文本。
     此函数在一个单独的线程中运行，以保持UI响应性。
     """
-    global file_size, is_downloading, url, ib
     
+    global file_size, is_downloading, url, ib
+    ib=0
     download_pb.config(mode="indeterminate")
-    download_pb.start(10)
+    download_pb.start(5)
     
     # 当有任何一个下载任务未完成时，继续更新进度
     while any(not future.done() for future in futures):
@@ -399,7 +400,7 @@ def cancel_download():
         file_name = filename
         destination = os.path.join(destination_path, file_name)
         is_downloading = False
-        cancel_download_button.config(state="disabled")
+        cancel_download_button.grid_forget()
     if os.path.exists(destination):
         os.remove(destination)
         status_label.config(text="Download cancelled and incomplete file removed.")
@@ -726,7 +727,7 @@ if __name__ == "__main__":
     download_button.grid(row=4, column=0, columnspan=5, pady=20, padx=20)
 
     cancel_download_button = ttk.Button(framea_tab, text="Cancel Download", command=cancel_download, state="disabled")
-    cancel_download_button.grid(row=5, column=0, columnspan=3, pady=20, padx=20)
+    cancel_download_button.grid_forget()
 
     
     download_pb=ttk.Progressbar(framea_tab,length=500,mode="determinate")
